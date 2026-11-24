@@ -6,54 +6,72 @@
 <meta name="description" content="Convierte imágenes y modelos 3D en arte ASCII animado. Todo ocurre en tu navegador: nada se sube a ningún sitio.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wdth,wght@75..100,300..800&family=Martian+Mono:wght@300..600&display=swap">
-<link rel="stylesheet" href="generador.css?v=19"></head>
+<link rel="stylesheet" href="generador.css?v=24"></head>
 <body>
 <header><a href="index.html" class="marca">Mundo en caracteres</a><nav aria-label="Secciones"><a href="index.html#indice">Galería</a><span aria-current="page">Generador</span></nav></header>
 <main>
  <section id="escena" aria-label="Dibujo">
-  <canvas id="lienzo" tabindex="0" aria-label="Dibujo ASCII. Arrastra para girarlo, usa la rueda para acercar y tócalo para que reaccione."></canvas>
+  <canvas id="lienzo" tabindex="0" aria-label="Dibujo ASCII. Con la vista desbloqueada, arrastra para girarlo y tócalo para que reaccione."></canvas>
   <div id="soltar" hidden><p>Suelta aquí la imagen o el modelo</p></div>
   <div id="pincel" hidden role="dialog" aria-label="Marcar el objeto">
    <p>Pinta encima del objeto. No hace falta cubrirlo entero: el contorno se ajusta solo.</p>
    <canvas></canvas>
    <div class="fila"><button type="button" id="pObjeto">Es objeto</button><button type="button" id="pFondo">Es fondo</button><button type="button" id="pAuto">Automático</button><button type="button" id="pNo">Cancelar</button><button type="button" id="pSi" class="lleno">Listo</button></div>
   </div>
+  <div id="barraEscena" role="toolbar" aria-label="Vista"><button type="button" id="candado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11h14v9H5zM8 11V7a4 4 0 0 1 8 0v4"/></svg></button><button type="button" id="deshacer" aria-label="Deshacer (Ctrl+Z)" title="Deshacer (Ctrl+Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5 3 10l5 5M3 10h11a6 6 0 0 1 0 12h-3"/></svg></button><button type="button" id="rehacer" aria-label="Rehacer (Ctrl+Y)" title="Rehacer (Ctrl+Y)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 5 5 5-5 5M21 10H10a6 6 0 0 0 0 12h3"/></svg></button><button type="button" id="pausa" aria-label="Pausar" title="Pausar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></button><button type="button" id="centrar" aria-label="Centrar la vista" title="Centrar la vista"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></svg></button></div>
   <p id="etiqueta"></p>
   <div id="aviso" role="status"></div>
  </section>
- <section id="panel" aria-label="Controles">
-  <div class="grupo">
+ <section id="panel" aria-label="Personalizar el dibujo">
+  <div class="abre">
    <h1>Generador</h1>
-   <p class="nota">Sube una imagen (PNG, JPG, WebP, GIF) o un modelo 3D (GLB, OBJ, STL, PLY). No sale de tu navegador.</p>
+   <p class="nota">Imagen (PNG, JPG, WebP, GIF) o modelo 3D (GLB, OBJ, STL, PLY). No sale de tu navegador.</p>
    <div class="fila"><button type="button" class="lleno" id="elegir">Elegir archivo</button><button type="button" id="nuevo">Ver ejemplo</button></div>
-   <input type="file" id="archivo" hidden accept="image/png,image/jpeg,image/webp,image/gif,image/bmp,image/avif,.glb,.obj,.stl,.ply,.json,.mundo">
+   <input type="file" id="archivo" hidden>
    <label class="campo">Nombre<input id="nombre" maxlength="60" autocomplete="off" spellcheck="false"></label>
-   <p id="contexto" class="nota"></p>
   </div>
-  <div class="grupo"><h2>Animación</h2>
-   <div class="fila"><button type="button" id="auto">Según el contenido</button><button type="button" id="quieto">Sin animación</button></div>
-   <div id="anims" class="chips" role="group" aria-label="Animaciones"></div>
-   <div id="cObjeto" class="objeto"><label class="campo">Qué se mueve<select id="mueve"><option value="objeto">Solo el objeto</option><option value="todo">Toda la imagen</option></select></label><button type="button" id="marcar">Marcar el objeto</button></div>
-   <label class="check"><input type="checkbox" id="contextoOn"> Mover agua, fuego, plantas y cielo de la imagen</label>
-   <div id="dAnim"></div>
+  <div class="tabs" role="tablist" aria-label="Opciones del dibujo">
+   <button type="button" role="tab" id="t-estilo" aria-controls="p-estilo" aria-selected="true">Estilo</button>
+   <button type="button" role="tab" id="t-mueve" aria-controls="p-mueve" aria-selected="false" tabindex="-1">Movimiento</button>
+   <button type="button" role="tab" id="t-ajuste" aria-controls="p-ajuste" aria-selected="false" tabindex="-1">Ajustes</button>
+   <button type="button" role="tab" id="t-baja" aria-controls="p-baja" aria-selected="false" tabindex="-1">Descargar</button>
   </div>
-  <div class="grupo"><h2>Letras y color</h2>
-   <label class="campo">Letras<select id="rampa"></select></label>
-   <label class="campo" id="cPropia" hidden>Tus letras, de oscuro a claro<input id="propia" maxlength="64" autocomplete="off" spellcheck="false"></label>
-   <label class="campo">Color<select id="color"></select></label>
-   <div class="fila"><label class="campo corto" id="cTinte" hidden>Tinte<input type="color" id="tinte"></label><label class="campo corto">Fondo<input type="color" id="fondo"></label></div>
-   <label class="check"><input type="checkbox" id="invertir"> Invertir luces</label>
-   <label class="check" id="cSinFondo"><input type="checkbox" id="sinFondo"> Quitar el fondo</label>
-   <button type="button" id="fiel">Volver a los colores originales</button>
-   <div id="dForma"></div>
-  </div>
-  <div class="grupo"><h2>Descargar</h2>
-   <div class="descargas">
-    <button type="button" data-baja="html"><b>Página animada</b><span>.html que se abre sin internet</span></button>
-    <button type="button" data-baja="png"><b>Imagen</b><span>.png del momento actual</span></button>
-    <button type="button" data-baja="video"><b>Video</b><span>6 segundos</span></button>
-    <button type="button" data-baja="txt"><b>Texto</b><span>.txt para copiar y pegar</span></button>
-    <button type="button" data-baja="proyecto"><b>Proyecto</b><span>.json para seguir editando</span></button>
+  <div class="hojas">
+   <div role="tabpanel" id="p-estilo" aria-labelledby="t-estilo">
+    <h2>Estilos listos</h2><div id="estilos" class="cartas"></div>
+    <h2>Letras</h2><div id="rampas" class="cartas" role="group" aria-label="Letras"></div>
+    <label class="campo" id="cPropia" hidden>Tus letras, de oscuro a claro<input id="propia" maxlength="64" autocomplete="off" spellcheck="false"></label>
+    <h2>Color de las letras</h2><div id="colores" class="muestras" role="group" aria-label="Color de las letras"></div>
+    <label class="campo" id="cTinte" hidden>Tinte<input type="color" id="tinte"></label>
+    <h2>Color del fondo</h2><div id="fondos" class="muestras" role="group" aria-label="Color del fondo"></div>
+    <div class="fila"><label class="campo corto">Otro color<input type="color" id="fondo"></label><button type="button" id="fondoBase">Restablecer fondo</button></div>
+    <button type="button" id="fiel">Volver a los colores originales</button>
+   </div>
+   <div role="tabpanel" id="p-mueve" aria-labelledby="t-mueve" hidden>
+    <p id="contexto" class="nota"></p>
+    <div class="fila"><button type="button" id="auto">Según el contenido</button><button type="button" id="quieto">Sin movimiento</button></div>
+    <div id="cObjeto"><h2>Qué se mueve</h2><div class="dos" role="group" aria-label="Qué se mueve"><button type="button" data-mueve="objeto">Solo el objeto</button><button type="button" data-mueve="todo">Toda la imagen</button></div><button type="button" id="marcar">Marcar el objeto con el pincel</button></div>
+    <h2>Cómo se mueve</h2><div id="anims" class="chips" role="group" aria-label="Cómo se mueve"></div>
+    <h2>Ambiente</h2><div id="ambiente" class="chips" role="group" aria-label="Ambiente"></div>
+    <label class="check"><input type="checkbox" id="contextoOn"> Mover agua, fuego, plantas y cielo</label>
+    <div id="dAnim"></div>
+   </div>
+   <div role="tabpanel" id="p-ajuste" aria-labelledby="t-ajuste" hidden>
+    <h2>Forma</h2><div id="dForma"></div>
+    <label class="check" id="cSinFondo"><input type="checkbox" id="sinFondo"> Quitar el fondo de la imagen</label>
+    <h2>Luz y color</h2><div id="dLuz"></div>
+    <label class="check"><input type="checkbox" id="invertir"> Invertir luces</label>
+    <button type="button" id="ajusteBase">Restablecer estos ajustes</button>
+   </div>
+   <div role="tabpanel" id="p-baja" aria-labelledby="t-baja" hidden>
+    <div class="descargas">
+     <button type="button" data-baja="html"><b>Página animada</b><span>.html que se abre sin internet</span></button>
+     <button type="button" data-baja="png"><b>Imagen</b><span>.png del momento actual</span></button>
+     <button type="button" data-baja="video"><b>Video</b><span>6 segundos</span></button>
+     <button type="button" data-baja="txt"><b>Texto</b><span>.txt para copiar y pegar</span></button>
+     <button type="button" data-baja="proyecto"><b>Proyecto</b><span>.json para seguir editando</span></button>
+    </div>
+    <p class="nota">El dibujo ya está guardado en este navegador. Descarga el proyecto si quieres conservarlo fuera.</p>
    </div>
   </div>
  </section>
@@ -66,5 +84,5 @@
    <p>Para no perderlos, descarga el proyecto o la copia de todos. Ese archivo se puede abrir aquí más adelante, también en otro equipo.</p></details>
  </section>
 </main>
-<script src="motor.js?v=19"></script><script src="modelos.js?v=19"></script><script src="objeto.js?v=19"></script><script src="generador.js?v=19"></script>
+<script src="motor.js?v=24"></script><script src="modelos.js?v=24"></script><script src="objeto.js?v=24"></script><script src="generador.js?v=24"></script>
 </body></html>

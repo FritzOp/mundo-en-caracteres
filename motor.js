@@ -92,7 +92,8 @@ class MotorAscii {
   toca(ms) { if ((ms / 1000 - this.toque) > 2.2) this.toque = ms / 1000; }
   cuadro(ms) {
     const gl = this.gl, S = this.S; this.mide();
-    const t = ms / 1000 * S.velocidad + this.desfase, A = MotorAscii.ANIM.map(a => S.anim.includes(a) ? S.fuerza : 0), hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+    const dt = Math.max(0, Math.min(100, ms - (this.um === undefined ? ms : this.um))); this.um = ms; if (this.rel === undefined) this.rel = ms / 1000; if (!this.pausa) this.rel += dt / 1000 * S.velocidad;
+    const t = this.rel + this.desfase, A = MotorAscii.ANIM.map(a => S.anim.includes(a) ? S.fuerza : 0), hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
     const tq = ms / 1000 - this.toque, acc = tq > 0 && tq < 2 ? Math.min(1, tq * 5) * Math.min(1, (2 - tq) * 2) : 0;
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.capas[0].fb); gl.viewport(0, 0, this.cols * 2, this.filas * 2); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
     const p = this.pFig; gl.useProgram(p.p); const u = p.u, asp = this.lienzo.width / this.lienzo.height, im = this.tipo === 'imagen';
@@ -190,7 +191,7 @@ void main(){
  float l=dot(c,vec3(.3,.59,.11));c=max(mix(vec3(l),c,1.+aj.z),0.);float m=max(c.r,max(c.g,c.b)),m2=m*luz;m2=m2<.75?m2:.75+.25*(1.-exp(-(m2-.75)/.25));m2=clamp((m2-.5)*(1.+aj.y*1.6)+.5+aj.x*.6,0.,1.);c=m>.001?c*m2/m:vec3(m2);c=clamp(c,0.,1.);if(aj.w>.5)c=1.-c;c*=smoothstep(.25,.75,a);l=max(c.r,max(c.g,c.b));
  vec3 q=c;
  if(modo==1)q=mix(vec3(.25,.08,0),vec3(1.,.72,.3),l)*l*1.2;else if(modo==2)q=mix(vec3(0,.12,.25),vec3(.55,1.,.95),l)*l*1.15;else if(modo==3)q=vec3(.15,1.,.35)*l;else if(modo==4)q=vec3(.95,.92,.85)*l;
- else if(modo==5)q=l<.5?mix(vec3(0),vec3(.85,.12,.03),l*2.):mix(vec3(.85,.12,.03),vec3(1.,.85,.35),l*2.-1.);else if(modo==6)q=(.5+.5*cos(6.28*(l*.8+u.y*.35+t*.05)+vec3(0,2.1,4.2)))*l*1.2;else if(modo==7)q=tinte*l;
+ else if(modo==5)q=l<.5?mix(vec3(0),vec3(.85,.12,.03),l*2.):mix(vec3(.85,.12,.03),vec3(1.,.85,.35),l*2.-1.);else if(modo==6){float e=.5+.5*sin(u.y*3.+u.x*1.5+t*.35);q=(e<.5?mix(vec3(1.,.24,.78),vec3(.38,.42,1.),e*2.):mix(vec3(.38,.42,1.),vec3(.17,.94,.8),e*2.-1.))*l*1.15;}else if(modo==7)q=tinte*l;
  float hueco=1.-smoothstep(.2,.6,a);vec3 antes=q;
  // ambiente
  if(A[13]>0.&&hueco>.5){float e=h(g);if(e>.985)q+=vec3(.6,.75,1.)*A[13]*(.35+.4*sin(t*2.+e*900.));}
@@ -233,11 +234,19 @@ MotorAscii.abre = async (motor, P) => {
   else motor.ponModelo(await MotorAscii.modeloDe(P.modelo));
 };
 // arrastrar para girar, rueda para acercar, tocar para que reaccione
-MotorAscii.gestos = (motor, cambia) => {
-  const c = motor.lienzo; let d = null; c.style.touchAction = 'pan-y';
-  c.addEventListener('pointerdown', e => { if (e.button) return; d = { x: e.clientX, y: e.clientY, gy: motor.S.giroY, gx: motor.S.giroX, m: 0 }; c.setPointerCapture(e.pointerId); });
-  c.addEventListener('pointermove', e => { if (!d) return; const x = e.clientX - d.x, y = e.clientY - d.y; d.m = Math.max(d.m, Math.hypot(x, y)); if (d.m < 5) return; let gy = d.gy + x / 150, gx = d.gx + (e.pointerType === 'touch' ? 0 : y / 220); if (motor.tipo === 'imagen') { gy = Math.max(-.7, Math.min(.7, gy)); gx = Math.max(-.5, Math.min(.5, gx)); } motor.S.giroY = gy; motor.S.giroX = Math.max(-1.5, Math.min(1.5, gx)); if (cambia) cambia(); });
-  for (const ev of ['pointerup', 'pointercancel']) c.addEventListener(ev, () => { if (d && d.m < 5 && ev === 'pointerup') motor.toca(performance.now()); d = null; });
-  c.addEventListener('wheel', e => { e.preventDefault(); motor.S.zoom = Math.max(.3, Math.min(3, motor.S.zoom * Math.exp(-e.deltaY * .001))); if (cambia) cambia(); }, { passive: false });
+MotorAscii.gestos = (motor, cambia, opc = {}) => {
+  const c = motor.lienzo, dedos = new Map(); let d = null, pinza = 0; if (!opc.libre) c.style.touchAction = 'pan-y';
+  const zoom = v => { motor.S.zoom = Math.max(.3, Math.min(3, v)); if (cambia) cambia(); }, largo = () => { const [a, b] = [...dedos.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+  c.addEventListener('pointerdown', e => {
+    if (e.button || opc.libre && !opc.libre(e)) return; dedos.set(e.pointerId, { x: e.clientX, y: e.clientY }); try { c.setPointerCapture(e.pointerId); } catch (x) {}
+    if (dedos.size === 2) { d = null; pinza = motor.S.zoom / Math.max(1, largo()); } else d = dedos.size === 1 ? { x: e.clientX, y: e.clientY, gy: motor.S.giroY, gx: motor.S.giroX, m: 0 } : null;
+  });
+  c.addEventListener('pointermove', e => {
+    if (!dedos.has(e.pointerId)) return; dedos.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (dedos.size === 2) { if (opc.libre) zoom(pinza * largo()); return; } if (!d) return;
+    const x = e.clientX - d.x, y = e.clientY - d.y; d.m = Math.max(d.m, Math.hypot(x, y)); if (d.m < 9) return;
+    let gy = d.gy + x / 150, gx = d.gx + (e.pointerType === 'touch' && !opc.libre ? 0 : y / 220); if (motor.tipo === 'imagen') { gy = Math.max(-.7, Math.min(.7, gy)); gx = Math.max(-.5, Math.min(.5, gx)); } motor.S.giroY = gy; motor.S.giroX = Math.max(-1.5, Math.min(1.5, gx)); if (cambia) cambia();
+  });
+  for (const ev of ['pointerup', 'pointercancel']) c.addEventListener(ev, e => { dedos.delete(e.pointerId); if (d && d.m < 9 && ev === 'pointerup') motor.toca(performance.now()); d = null; });
+  c.addEventListener('wheel', e => { if (opc.rueda && !opc.rueda(e)) return; e.preventDefault(); zoom(motor.S.zoom * Math.exp(-e.deltaY * .001)); }, { passive: false });
 };
 if (typeof module !== 'undefined') module.exports = MotorAscii;

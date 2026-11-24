@@ -105,8 +105,8 @@ async function muestra(nuevo) {
     motor.ponImagen(info);
   } else { info = null; motor.ponModelo(D.modelo); }
   const c = contexto(); if (nuevo) { D.ajustes.anim = c.anim; if (quieto) D.ajustes.velocidad = 0; }
-  motor.S = D.ajustes; if (nuevo) D.ajustes.luz = motor.luzIdeal(); $('#contexto').textContent = c.ve.length ? 'He encontrado: ' + c.ve.join(', ') + '.' : 'No he reconocido nada en concreto.';
-  pintaPanel();
+  motor.S = D.ajustes; if (nuevo) D.ajustes.luz = D.luzAuto = motor.luzIdeal(); $('#contexto').textContent = c.ve.length ? 'He encontrado: ' + c.ve.join(', ') + '.' : 'No he reconocido nada en concreto.';
+  pintaPanel(); if (hId !== D.id) { ponPausa(false); anota(); }
 }
 const LIM = 30e6, inicial = () => MotorAscii.ajustes({ columnas: Math.max(88, Math.min(210, Math.round(lienzo.clientWidth / 5.4 / 2) * 2)) });
 async function abreArchivo(f) {
@@ -142,35 +142,77 @@ function ejemplo() {
 }
 
 // ---------- panel ----------
-const N_ANIM = { respira: 'Respira', viento: 'Viento', nado: 'Nada', aleteo: 'Aletea', flota: 'Flota', vibra: 'Vibra', latido: 'Late', giro: 'Gira', olas: 'Oleaje', camina: 'Camina', lluvia: 'Lluvia', nieve: 'Nieve', chispas: 'Chispas', estrellas: 'Estrellas', niebla: 'Niebla', codigo: 'Letras que caen', escaneo: 'Escaneo' };
-const N_RAMPA = { clasica: 'Clásica', bloques: 'Bloques', puntos: 'Puntos', binaria: 'Ceros y unos', lineas: 'Líneas', letras: 'Muchas letras', propia: 'Las tuyas' };
-const N_COLOR = { original: 'Original', ambar: 'Ámbar', abismo: 'Abismo', fosforo: 'Fósforo verde', papel: 'Papel', brasa: 'Brasa', neon: 'Neón', propio: 'Un tinte' };
-const opciones = (s, o) => Object.entries(o).forEach(([v, n]) => { const p = document.createElement('option'); p.value = v; p.textContent = n; s.append(p); });
-opciones($('#rampa'), N_RAMPA); opciones($('#color'), N_COLOR);
-const barras = [];
-function barra(donde, k, nombre, min, max, paso, f) { const l = document.createElement('label'); l.className = 'barra'; const s = document.createElement('span'), o = document.createElement('output'), i = document.createElement('input'); s.textContent = nombre; i.type = 'range'; i.id = 'r-' + k; Object.assign(i, { min, max, step: paso }); i.addEventListener('input', () => { D.ajustes[k] = +i.value; o.textContent = f(+i.value); cambio(); }); l.append(s, o, i); $(donde).append(l); barras.push(() => { i.value = D.ajustes[k]; o.textContent = f(D.ajustes[k]); }); return l; }
+const N_ANIM = { respira: 'Respira', viento: 'Viento', nado: 'Nada', aleteo: 'Aletea', flota: 'Flota', vibra: 'Vibra', latido: 'Late', giro: 'Gira', olas: 'Oleaje', camina: 'Camina', lluvia: 'Lluvia', nieve: 'Nieve', chispas: 'Chispas', estrellas: 'Estrellas', niebla: 'Niebla', codigo: 'Letras que caen', escaneo: 'Escaneo' }, AMBIENTE = ['lluvia', 'nieve', 'chispas', 'estrellas', 'niebla', 'codigo', 'escaneo'];
+const N_RAMPA = { clasica: ['Clásica', '.:=+*#@'], bloques: ['Bloques', '░▒▓█'], puntos: ['Puntos', '·•●'], binaria: ['Ceros y unos', '0110'], lineas: ['Líneas', '.-=≡#'], letras: ['Muchas', 'iloZQW&'], propia: ['Las tuyas', 'Aa?'] };
+const N_COLOR = { original: ['Original', 'conic-gradient(#e85d4a,#f2b04a,#8fd05a,#4ac6d8,#7a6cf0,#e85da8,#e85d4a)'], ambar: ['Ámbar', 'linear-gradient(135deg,#401400,#ffb84d)'], abismo: ['Abismo', 'linear-gradient(135deg,#001f40,#8cfff2)'], fosforo: ['Fósforo', 'linear-gradient(135deg,#031c08,#26ff59)'], papel: ['Hueso', 'linear-gradient(135deg,#22201c,#f2ebd9)'], brasa: ['Brasa', 'linear-gradient(135deg,#1a0400,#d91f08,#ffd959)'], neon: ['Neón', 'linear-gradient(135deg,#ff3ec8,#5a6cff,#2cf0c8)'], propio: ['Tinte', ''] };
+const FONDOS = [['#01040c', 'Abismo'], ['#000000', 'Negro'], ['#0b1428', 'Noche'], ['#170b24', 'Ciruela'], ['#0a1c14', 'Bosque'], ['#260d08', 'Vino'], ['#1c1c1e', 'Carbón']];
+const b0 = MotorAscii.BASE, ESTILOS = [
+  ['Fiel', { rampa: 'clasica', color: 'original', fondo: b0.fondo, resplandor: .5, contraste: 0, saturacion: 0 }, '@%#*', 'conic-gradient(from 90deg,#e8764a,#e8c14a,#6fd07a,#5aa8f0,#e8764a)'],
+  ['Terminal', { rampa: 'clasica', color: 'fosforo', fondo: '#020a04', resplandor: .9, contraste: .15, saturacion: 0 }, '>_#@', '#35ff68'],
+  ['Monitor ámbar', { rampa: 'letras', color: 'ambar', fondo: '#0d0602', resplandor: .9, contraste: .15, saturacion: 0 }, 'WQ0o', '#ffb84d'],
+  ['Bloques', { rampa: 'bloques', color: 'original', fondo: '#000000', resplandor: .2, contraste: .1, saturacion: .15 }, '█▓▒░', 'linear-gradient(90deg,#5aa8f0,#e8c14a)'],
+  ['Neón', { rampa: 'letras', color: 'neon', fondo: '#0a0418', resplandor: 1.2, contraste: .2, saturacion: 0 }, '&#%@', 'linear-gradient(90deg,#ff3ec8,#2cf0c8)'],
+  ['Carboncillo', { rampa: 'letras', color: 'papel', fondo: '#1c1c1e', resplandor: .1, contraste: .2, saturacion: 0 }, '#+=-', '#f2ebd9'],
+  ['Brasas', { rampa: 'puntos', color: 'brasa', fondo: '#120302', resplandor: 1, contraste: .15, saturacion: 0 }, '●•·', 'linear-gradient(90deg,#ffd959,#d91f08)'],
+  ['Binario', { rampa: 'binaria', color: 'abismo', fondo: b0.fondo, resplandor: .7, contraste: .1, saturacion: 0 }, '0110', '#8cfff2']];
+const crea = (t, c, txt) => { const e = document.createElement(t); if (c) e.className = c; if (txt) e.textContent = txt; if (t === 'button') e.type = 'button'; return e; };
+// pone ajustes de golpe: todos los botones del panel pasan por aquí
+const toma = o => { Object.assign(D.ajustes, o); pintaPanel(); cambio(); };
+for (const [n, o, t, c] of ESTILOS) { const b = crea('button', 'carta'), s = crea('span', 'mues', t), e = crea('span', '', n); s.style.backgroundColor = o.fondo; s.style.setProperty('--c', c.startsWith('#') ? 'linear-gradient(' + c + ',' + c + ')' : c); b.append(s, e); b.estilo = o; b.addEventListener('click', () => toma(o)); $('#estilos').append(b); }
+for (const [k, [n, t]] of Object.entries(N_RAMPA)) { const b = crea('button', 'carta'), s = crea('span', 'mues', t); s.style.setProperty('--c', 'linear-gradient(90deg,var(--bruma),var(--hueso))'); b.append(s, crea('span', '', n)); b.dataset.rampa = k; b.addEventListener('click', () => { toma({ rampa: k }); if (k === 'propia') $('#propia').focus(); }); $('#rampas').append(b); }
+for (const [k, [n, c]] of Object.entries(N_COLOR)) { const b = crea('button', 'color'), s = crea('span', 'gota'); s.style.background = c; b.append(s, crea('span', '', n)); b.dataset.color = k; b.addEventListener('click', () => toma({ color: k })); $('#colores').append(b); }
+for (const [c, n] of FONDOS) { const b = crea('button', 'color'), s = crea('span', 'gota'); s.style.background = c; b.append(s, crea('span', '', n)); b.dataset.fondo = c; b.addEventListener('click', () => toma({ fondo: c })); $('#fondos').append(b); }
+const barras = [], base = k => k === 'luz' ? (D.luzAuto || 1) : k === 'columnas' ? inicial().columnas : b0[k];
+function barra(donde, k, nombre, min, max, paso, f) {
+  const l = crea('div', 'barra'), s = crea('label', '', nombre), o = crea('output'), i = crea('input'), r = crea('button', 'cero', '↺'); i.type = 'range'; i.id = s.htmlFor = 'r-' + k; Object.assign(i, { min, max, step: paso }); r.title = 'Restablecer'; r.setAttribute('aria-label', 'Restablecer ' + nombre.toLowerCase());
+  const pinta = () => { const v = D.ajustes[k]; i.value = v; o.textContent = f(v); i.style.setProperty('--p', (v - min) / (max - min) * 100 + '%'); r.style.visibility = Math.abs(v - base(k)) > paso / 2 ? 'visible' : 'hidden'; };
+  const vuelve = () => { D.ajustes[k] = k === 'luz' ? (D.luzAuto = motor.luzIdeal()) : base(k); pinta(); cambio(); };
+  i.addEventListener('input', () => { D.ajustes[k] = +i.value; pinta(); cambio(); }); let antes = null; i.addEventListener('pointerdown', e => antes = e.pointerType === 'touch' ? D.ajustes[k] : null); i.addEventListener('pointercancel', () => { if (antes !== null) { D.ajustes[k] = antes; antes = null; pinta(); } }); i.addEventListener('pointerup', () => antes = null); i.addEventListener('dblclick', vuelve); r.addEventListener('click', () => { vuelve(); i.focus(); }); l.append(s, o, r, i); $(donde).append(l); barras.push(pinta); return l;
+}
 const pc = v => Math.round(v * 100) + ' %', sg = v => (v > 0 ? '+' : '') + Math.round(v * 100);
 barra('#dAnim', 'fuerza', 'Intensidad', 0, 2, .05, pc); barra('#dAnim', 'velocidad', 'Velocidad', 0, 3, .05, pc);
-barra('#dForma', 'columnas', 'Detalle (letras de ancho)', 40, 260, 2, v => v); const bAtras = barra('#dForma', 'atras', 'Luz del fondo', 0, 1, .05, pc); barra('#dForma', 'luz', 'Luz', .3, 4, .05, pc); barra('#dForma', 'brillo', 'Brillo', -1, 1, .02, sg); barra('#dForma', 'contraste', 'Contraste', -1, 1, .02, sg); barra('#dForma', 'saturacion', 'Saturación', -1, 1, .02, sg); barra('#dForma', 'resplandor', 'Resplandor', 0, 1.5, .05, pc); const bRel = barra('#dForma', 'relieve', 'Relieve', 0, 1, .02, pc); barra('#dForma', 'zoom', 'Tamaño', .3, 3, .02, pc);
-for (const a of MotorAscii.ANIM) { const b = document.createElement('button'); b.type = 'button'; b.dataset.a = a; b.textContent = N_ANIM[a]; b.addEventListener('click', () => { const s = new Set(D.ajustes.anim); s.has(a) ? s.delete(a) : s.add(a); D.ajustes.anim = MotorAscii.ANIM.filter(q => s.has(q)); if (quieto && !D.ajustes.velocidad) D.ajustes.velocidad = 1; pintaPanel(); cambio(); }); $('#anims').append(b); }
+barra('#dForma', 'columnas', 'Letras de ancho', 40, 260, 2, v => v); barra('#dForma', 'zoom', 'Tamaño', .3, 3, .02, pc); const bRel = barra('#dForma', 'relieve', 'Relieve', 0, 1, .02, pc);
+barra('#dLuz', 'luz', 'Luz', .3, 4, .05, pc); const bAtras = barra('#dLuz', 'atras', 'Luz del fondo', 0, 1, .05, pc); barra('#dLuz', 'brillo', 'Brillo', -1, 1, .02, sg); barra('#dLuz', 'contraste', 'Contraste', -1, 1, .02, sg); barra('#dLuz', 'saturacion', 'Saturación', -1, 1, .02, sg); barra('#dLuz', 'resplandor', 'Resplandor', 0, 1.5, .05, pc);
+for (const a of MotorAscii.ANIM) { const b = crea('button', '', N_ANIM[a]); b.dataset.a = a; b.addEventListener('click', () => { const s = new Set(D.ajustes.anim); s.has(a) ? s.delete(a) : s.add(a); if (quieto && !D.ajustes.velocidad) D.ajustes.velocidad = 1; ponPausa(false); toma({ anim: MotorAscii.ANIM.filter(q => s.has(q)) }); }); $(AMBIENTE.includes(a) ? '#ambiente' : '#anims').append(b); }
+const marca = (sel, f) => $$(sel).forEach(b => b.setAttribute('aria-pressed', !!f(b)));
 function pintaPanel() {
-  const S = D.ajustes; $('#nombre').value = D.nombre; $('#etiqueta').textContent = D.nombre + (D.ejemplo ? ' (aún sin guardar)' : '');
-  $$('#anims button').forEach(b => b.setAttribute('aria-pressed', S.anim.includes(b.dataset.a))); for (const k of ['rampa', 'color', 'propia', 'tinte', 'fondo']) $('#' + k).value = S[k]; $('#invertir').checked = S.invertir; $('#sinFondo').checked = S.sinFondo; $('#contextoOn').checked = S.contexto;
-  const im = D.tipo === 'imagen'; $('#cSinFondo').hidden = !im || !info.hay || info.hayAlfa; $('#cObjeto').hidden = !im || info.hayAlfa; $('#mueve').value = info && !info.hay ? 'todo' : S.mueve; $('#mueve').disabled = !im || !info.hay || info.solo; $('#contextoOn').closest('label').hidden = !im; bRel.hidden = !im; bAtras.hidden = !im || !info.hay || info.solo || S.mueve !== 'objeto'; $('#cPropia').hidden = S.rampa !== 'propia'; $('#cTinte').hidden = S.color !== 'propio'; barras.forEach(f => f());
+  const S = D.ajustes; if (document.activeElement !== $('#nombre')) $('#nombre').value = D.nombre; $('#etiqueta').textContent = D.nombre + (D.ejemplo ? ' (aún sin guardar)' : '');
+  marca('[data-a]', b => S.anim.includes(b.dataset.a)); marca('[data-rampa]', b => b.dataset.rampa === S.rampa); marca('[data-color]', b => b.dataset.color === S.color); marca('[data-fondo]', b => b.dataset.fondo === S.fondo.toLowerCase()); marca('#estilos button', b => Object.entries(b.estilo).every(([k, v]) => S[k] === v));
+  for (const k of ['propia', 'tinte', 'fondo']) if (document.activeElement !== $('#' + k) || k !== 'propia') $('#' + k).value = S[k]; $('[data-color=propio] .gota').style.background = S.tinte; $('#invertir').checked = S.invertir; $('#sinFondo').checked = S.sinFondo; $('#contextoOn').checked = S.contexto;
+  const im = D.tipo === 'imagen', sinObj = !im || !info.hay || info.solo, mv = im && !info.hay ? 'todo' : S.mueve; $('#cSinFondo').hidden = !im || !info.hay || info.hayAlfa; $('#cObjeto').hidden = !im || info.hayAlfa; marca('[data-mueve]', b => b.dataset.mueve === mv); $$('[data-mueve]').forEach(b => b.disabled = sinObj);
+  $('#contextoOn').closest('label').hidden = !im; bRel.hidden = !im; bAtras.hidden = sinObj || S.mueve !== 'objeto'; $('#cPropia').hidden = S.rampa !== 'propia'; $('#fondoBase').disabled = S.fondo.toLowerCase() === b0.fondo; $('#cTinte').hidden = S.color !== 'propio'; barras.forEach(f => f());
 }
+// pestañas
+const tabs = $$('[role=tab]'); const pestana = (t, foco) => { tabs.forEach(b => { const si = b === t; b.setAttribute('aria-selected', si); b.tabIndex = si ? 0 : -1; $('#' + b.getAttribute('aria-controls')).hidden = !si; }); $('.hojas').scrollTop = 0; if (foco) t.focus(); try { sessionStorage.setItem('pestana', t.id); } catch (e) {} const p = $('#panel').getBoundingClientRect(), y = $('.tabs').getBoundingClientRect(), es = $('#escena'); if (getComputedStyle(es).position === 'sticky' && $('.hojas').getBoundingClientRect().top < y.bottom - 2) scrollBy(0, $('.hojas').getBoundingClientRect().top - y.bottom); };
+tabs.forEach((t, i) => { t.addEventListener('click', () => pestana(t)); t.addEventListener('keydown', e => { const k = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key]; if (k !== undefined) { e.preventDefault(); pestana(tabs[(k + tabs.length) % tabs.length], true); } }); });
+try { const t = document.getElementById(sessionStorage.getItem('pestana') || ''); if (tabs.includes(t)) pestana(t); } catch (e) {}
+// deshacer y rehacer
+let hist = [], pos = -1, hId = '', hT = 0;
+const foto = () => JSON.stringify(D.ajustes), botones = () => { $('#deshacer').disabled = pos < 1; $('#rehacer').disabled = pos >= hist.length - 1; };
+const anota = () => { clearTimeout(hT); hT = 0; const s = foto(); if (hId !== D.id) { hId = D.id; hist = [s]; pos = 0; } else if (s !== hist[pos]) { hist.length = pos + 1; hist.push(s); if (hist.length > 80) hist.shift(); pos = hist.length - 1; } botones(); };
+async function salta(n) { if (hT) anota(); if (!hist[pos + n] || hId !== D.id) return; pos += n; const a = D.ajustes; D.ajustes = MotorAscii.ajustes(JSON.parse(hist[pos])); motor.S = D.ajustes; if (a.sinFondo !== D.ajustes.sinFondo || a.mueve !== D.ajustes.mueve) await muestra(false); else pintaPanel(); botones(); programa(); }
+$('#deshacer').addEventListener('click', () => salta(-1)); $('#rehacer').addEventListener('click', () => salta(1));
+addEventListener('keydown', e => { if (!(e.ctrlKey || e.metaKey) || e.altKey || (e.target.matches && e.target.matches('input:not([type=range]):not([type=checkbox]):not([type=color])'))) return; const k = e.key.toLowerCase(); if (k === 'z') { e.preventDefault(); salta(e.shiftKey ? 1 : -1); } else if (k === 'y') { e.preventDefault(); salta(1); } });
+// vista
+function ponPausa(v) { motor.pausa = v; const b = $('#pausa'), n = v ? 'Reanudar' : 'Pausar'; b.setAttribute('aria-label', n); b.title = n; b.setAttribute('aria-pressed', v); b.querySelector('path').setAttribute('d', v ? 'M8 5v14l11-7z' : 'M8 5v14M16 5v14'); }
+$('#pausa').addEventListener('click', () => ponPausa(!motor.pausa)); $('#centrar').addEventListener('click', () => { const mo = D.tipo === 'modelo'; toma({ giroX: mo ? .15 : 0, giroY: mo ? .5 : 0, zoom: 1 }); });
 let pend = false;
 const suelta = async () => { if (pend) { clearTimeout(cambioT); await guarda(); } };
 addEventListener('pagehide', suelta);
-function cambio() { if (D.ejemplo) return; pend = true; clearTimeout(cambioT); cambioT = setTimeout(guarda, 900); }
-for (const k of ['rampa', 'color', 'tinte', 'fondo']) $('#' + k).addEventListener('input', e => { D.ajustes[k] = e.target.value; pintaPanel(); cambio(); });
-$('#propia').addEventListener('input', e => { const v = [...e.target.value]; if (v.length > 1) { D.ajustes.propia = v.join(''); cambio(); } });
-$('#invertir').addEventListener('change', e => { D.ajustes.invertir = e.target.checked; cambio(); }); $('#contextoOn').addEventListener('change', e => { D.ajustes.contexto = e.target.checked; cambio(); });
+function programa() { if (D.ejemplo) return; pend = true; clearTimeout(cambioT); cambioT = setTimeout(guarda, 900); }
+function cambio() { clearTimeout(hT); hT = setTimeout(anota, 350); programa(); }
+for (const k of ['tinte', 'fondo']) $('#' + k).addEventListener('input', e => toma({ [k]: e.target.value }));
+$('#propia').addEventListener('input', e => { const v = [...e.target.value]; if (v.length > 1) toma({ propia: v.join('') }); });
+for (const [id, k] of [['invertir', 'invertir'], ['contextoOn', 'contexto']]) $('#' + id).addEventListener('change', e => toma({ [k]: e.target.checked }));
 $('#sinFondo').addEventListener('change', async e => { D.ajustes.sinFondo = e.target.checked; await muestra(false); cambio(); });
-$('#mueve').addEventListener('change', async e => { D.ajustes.mueve = e.target.value; await muestra(false); cambio(); });
-$('#nombre').addEventListener('input', e => { D.nombre = e.target.value.slice(0, 60) || 'Sin título'; $('#etiqueta').textContent = D.nombre; cambio(); });
-$('#auto').addEventListener('click', () => { D.ajustes.anim = contexto().anim; D.ajustes.contexto = true; if (!D.ajustes.velocidad) D.ajustes.velocidad = 1; pintaPanel(); cambio(); });
-$('#quieto').addEventListener('click', () => { D.ajustes.anim = []; D.ajustes.contexto = false; pintaPanel(); cambio(); });
-$('#fiel').addEventListener('click', () => { const b = MotorAscii.BASE; for (const k of ['color', 'brillo', 'contraste', 'saturacion', 'invertir', 'atras', 'resplandor']) D.ajustes[k] = b[k]; D.ajustes.luz = motor.luzIdeal(); pintaPanel(); cambio(); });
+$$('[data-mueve]').forEach(b => b.addEventListener('click', async () => { D.ajustes.mueve = b.dataset.mueve; await muestra(false); cambio(); }));
+$('#nombre').addEventListener('input', e => { D.nombre = e.target.value.slice(0, 60) || 'Sin título'; $('#etiqueta').textContent = D.nombre; programa(); });
+$('#auto').addEventListener('click', () => { ponPausa(false); toma({ anim: contexto().anim, contexto: true, velocidad: D.ajustes.velocidad || 1 }); });
+$('#quieto').addEventListener('click', () => toma({ anim: [], contexto: false }));
+const vuelve = l => Object.fromEntries(l.map(k => [k, b0[k]]));
+$('#fiel').addEventListener('click', () => { toma(vuelve(['color', 'brillo', 'contraste', 'saturacion', 'invertir', 'atras', 'resplandor', 'fondo', 'tinte'])); toma({ luz: D.luzAuto = motor.luzIdeal() }); });
+$('#fondoBase').addEventListener('click', () => toma({ fondo: b0.fondo }));
+$('#ajusteBase').addEventListener('click', async () => { const s = D.ajustes; Object.assign(s, vuelve(['relieve', 'zoom', 'atras', 'brillo', 'contraste', 'saturacion', 'resplandor', 'invertir']), { columnas: inicial().columnas }); toma({ luz: D.luzAuto = motor.luzIdeal() }); });
 $('#elegir').addEventListener('click', () => { $('#archivo').accept = 'image/png,image/jpeg,image/webp,image/gif,image/bmp,image/avif,.glb,.obj,.stl,.ply,.json'; $('#archivo').click(); });
 $('#recupera').addEventListener('click', () => { $('#archivo').accept = '.json'; $('#archivo').click(); });
 $('#archivo').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; abreArchivo(f); });
@@ -199,7 +241,7 @@ $('#marcar').addEventListener('click', async () => {
   for (const [id, m] of [['#pObjeto', 1], ['#pFondo', 2]]) $(id).addEventListener('click', () => { P.modo = m; $('#pObjeto').setAttribute('aria-pressed', m === 1); $('#pFondo').setAttribute('aria-pressed', m === 2); });
   $('#pAuto').addEventListener('click', () => { P.marca.fill(0); const r = Objeto.recorta(P.rgba, P.W, P.H, null); P.masc = r.claro ? r.masc : new Uint8Array(P.W * P.H); pinta(); });
   $('#pNo').addEventListener('click', () => { P = null; $('#pincel').hidden = true; });
-  $('#pSi').addEventListener('click', async () => { D.imagen.marca = P.marca.some(v => v) ? P.marca : null; P = null; $('#pincel').hidden = true; D.ajustes.mueve = 'objeto'; await muestra(false); D.ajustes.luz = motor.luzIdeal(); pintaPanel(); if (info.hay && !D.ajustes.anim.length) { D.ajustes.anim = contexto().anim; pintaPanel(); } if (D.ejemplo) await guarda(); else cambio(); avisa(info.hay ? 'Objeto actualizado.' : 'Sin objeto: se mueve el paisaje.'); });
+  $('#pSi').addEventListener('click', async () => { D.imagen.marca = P.marca.some(v => v) ? P.marca : null; P = null; $('#pincel').hidden = true; D.ajustes.mueve = 'objeto'; await muestra(false); D.ajustes.luz = D.luzAuto = motor.luzIdeal(); pintaPanel(); if (info.hay && !D.ajustes.anim.length) { D.ajustes.anim = contexto().anim; pintaPanel(); } if (D.ejemplo) await guarda(); else cambio(); avisa(info.hay ? 'Objeto actualizado.' : 'Sin objeto: se mueve el paisaje.'); });
 }
 
 // ---------- guardado en el navegador (IndexedDB) ----------
@@ -208,7 +250,7 @@ const abreBD = () => bd ? Promise.resolve(bd) : new Promise((ok, no) => { let r;
 const tx = async (modo, f) => { const b = await abreBD(); return new Promise((ok, no) => { const t = b.transaction('dibujos', modo), r = f(t.objectStore('dibujos')); t.oncomplete = () => ok(r && r.result); t.onerror = t.onabort = () => no(t.error); }); };
 let conBD = true, protegido = false;
 async function guarda() {
-  pend = false; if (!D || !conBD) return; D.ejemplo = false; const copia = { ...D, ajustes: { ...motor.S }, visto: Date.now(), mini: mini() }; delete copia.ejemplo;
+  pend = false; if (!D || !conBD) return; D.ejemplo = false; const copia = { ...D, ajustes: { ...motor.S }, visto: Date.now(), mini: mini() }; delete copia.ejemplo; delete copia.luzAuto;
   if (copia.tipo === 'modelo') copia.modelo = { ...D.modelo, partes: D.modelo.partes.map(p => ({ ...p, textura: p.textura ? (p.src = p.src || aSrc(p.textura)) : null, src: undefined })) };
   try { await tx('readwrite', s => s.put(copia)); if (!protegido && navigator.storage && navigator.storage.persist) protegido = await navigator.storage.persist(); } catch (e) { avisa(e && e.name === 'QuotaExceededError' ? 'No queda espacio en el navegador. Descarga el proyecto y borra alguno.' : 'No se pudo guardar aquí. Descarga el proyecto para no perderlo.', true); }
   $('#etiqueta').textContent = D.nombre; lista();
@@ -278,8 +320,15 @@ async function importa(f) {
 }
 
 // ---------- arranque ----------
-MotorAscii.gestos(motor, () => { barras.forEach(f => f()); cambio(); });
-lienzo.addEventListener('keydown', e => { const k = { ArrowLeft: -.15, ArrowRight: .15 }[e.key]; if (k) { motor.S.giroY += k; e.preventDefault(); cambio(); } else if (e.key === 'Enter') motor.toca(performance.now()); });
+// vista: en pantallas táctiles arranca bloqueada, para que al bajar por la página no se gire ni se acerque
+const tactil = matchMedia('(pointer: coarse)').matches; let libre = !tactil, avisado = false;
+function ponLibre(v) { libre = v; lienzo.style.touchAction = v ? 'none' : 'pan-y'; lienzo.classList.toggle('fija', !v); const b = $('#candado'), n = v ? 'Bloquear la vista' : 'Desbloquear la vista para girar y acercar'; b.setAttribute('aria-label', n); b.title = n; b.setAttribute('aria-pressed', !v); b.querySelector('path').setAttribute('d', v ? 'M5 11h14v9H5zM8 11V7a4 4 0 0 1 7.6-1.7' : 'M5 11h14v9H5zM8 11V7a4 4 0 0 1 8 0v4'); }
+$('#candado').addEventListener('click', () => { ponLibre(!libre); avisa(libre ? (tactil ? 'Un dedo gira, dos acercan.' : 'Arrastra para girar. Ctrl y rueda para acercar.') : 'Vista bloqueada.'); }); ponLibre(libre);
+MotorAscii.gestos(motor, () => { barras.forEach(f => f()); cambio(); }, { libre: () => libre, rueda: e => libre && (e.ctrlKey || e.metaKey) });
+{ let x0 = null; lienzo.addEventListener('pointerdown', e => x0 = libre ? null : e.clientX); lienzo.addEventListener('pointermove', e => { if (x0 !== null && !avisado && e.buttons && Math.abs(e.clientX - x0) > 40) { avisado = true; avisa('La vista está bloqueada. Toca el candado para girarla.'); } }); }
+// ni pellizcos ni doble toque agrandan la página mientras se edita
+document.addEventListener('gesturestart', e => e.preventDefault());
+lienzo.addEventListener('keydown', e => { const k = { ArrowLeft: -.15, ArrowRight: .15 }[e.key]; if (k && libre) { motor.S.giroY += k; e.preventDefault(); cambio(); } else if (e.key === 'Enter') motor.toca(performance.now()); else if (e.key === ' ') { e.preventDefault(); ponPausa(!motor.pausa); } });
 let visible = true; document.addEventListener('visibilitychange', () => visible = !document.hidden);
 const bucle = ms => { if (visible && D) motor.cuadro(ms); requestAnimationFrame(bucle); };
 (async () => { try { await ejemplo(); } catch (e) { avisa(e.message, true); } requestAnimationFrame(bucle); lista(); })();
