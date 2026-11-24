@@ -126,10 +126,10 @@ class MotorAscii {
   }
   // el dibujo recortado en un lienzo transparente, con letras nítidas aunque la pantalla sea pequeña
   recorte(solo, ancho = 1900) {
-    const gl = this.gl, [a, b, c, e] = this.caja(), mx = Math.min(4096, gl.getParameter(gl.MAX_TEXTURE_SIZE)), cw = Math.max(6, Math.floor(Math.min(Math.max(this.cw, ancho / this.cols), mx / this.cols, mx / this.filas / 1.75))), ch = Math.round(cw * this.ch / this.cw), W = cw * this.cols, H = ch * this.filas;
+    const gl = this.gl, [a, b, c, e] = this.caja(), mx = Math.min(4096, gl.getParameter(gl.MAX_TEXTURE_SIZE)), nc = c - a, nf = e - b, cw = Math.max(6, Math.floor(Math.min(Math.max(this.cw, ancho / Math.max(8, nc)), mx / nc, mx / nf / 1.75))), ch = Math.round(cw * this.ch / this.cw), W = cw * nc, H = ch * nf;
     const t = gl.createTexture(), fb = gl.createFramebuffer(); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
-    const u = this.pFin.u; gl.viewport(0, 0, W, H); gl.useProgram(this.pFin.p); gl.bindTexture(gl.TEXTURE_2D, this.capas[1].tex); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.letras); gl.activeTexture(gl.TEXTURE0); gl.uniform1f(u.solo, solo); gl.uniform2f(u.celda, cw, ch); gl.drawArrays(gl.TRIANGLES, 0, 3);
-    const w = (c - a) * cw, h = (e - b) * ch, d = new Uint8Array(w * h * 4); gl.readPixels(a * cw, b * ch, w, h, gl.RGBA, gl.UNSIGNED_BYTE, d); gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.deleteFramebuffer(fb); gl.deleteTexture(t);
+    const u = this.pFin.u; gl.viewport(0, 0, W, H); gl.useProgram(this.pFin.p); gl.bindTexture(gl.TEXTURE_2D, this.capas[1].tex); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.letras); gl.activeTexture(gl.TEXTURE0); gl.uniform1f(u.solo, solo); gl.uniform2f(u.celda, cw, ch); gl.uniform2f(u.desp, a * cw, b * ch); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.uniform2f(u.desp, 0, 0); const w = W, h = H, d = new Uint8Array(w * h * 4); gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, d); gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.deleteFramebuffer(fb); gl.deleteTexture(t);
     const l = document.createElement('canvas'); l.width = w; l.height = h; const x = l.getContext('2d'), m = x.createImageData(w, h); for (let y = 0; y < h; y++) m.data.set(d.subarray((h - 1 - y) * w * 4, (h - y) * w * 4), y * w * 4); x.putImageData(m, 0, 0); return l;
   }
   // el cuadro actual como texto
@@ -228,9 +228,9 @@ void main(){
  q=clamp(q,0.,1.);o=vec4(q,max(1.-hueco,step(.05,max(q.r,max(q.g,q.b)))));
 }`;
 MotorAscii.F_FIN = `
-uniform sampler2D img,letras;uniform vec2 celda,rejilla;uniform float n,res,t,tinta[64],solo;uniform vec3 fondo;out vec4 o;
+uniform sampler2D img,letras;uniform vec2 celda,rejilla,desp;uniform float n,res,t,tinta[64],solo;uniform vec3 fondo;out vec4 o;
 float L(float i,vec2 k){return texture(letras,vec2((clamp(i,0.,n-1.)+clamp(k.x,.02,.98))/n,k.y)).r;}
-void main(){vec2 f=gl_FragCoord.xy/celda,k=fract(f);vec3 c=texelFetch(img,ivec2(min(floor(f),rejilla-1.)),0).rgb;float l=max(c.r,max(c.g,c.b));
+void main(){vec2 f=(gl_FragCoord.xy+desp)/celda,k=fract(f);vec3 c=texelFetch(img,ivec2(min(floor(f),rejilla-1.)),0).rgb;float l=max(c.r,max(c.g,c.b));
  float q0=clamp(pow(l,.65),0.,.999),id=floor(q0*n),g=L(id,k);g*=clamp(q0*tinta[int(n)-1]/tinta[int(id)],.72,1.2);vec3 b=vec3(0);float w=0.;
  if(res>0.){for(int j=1;j<22;j++){float r=sqrt(float(j))*1.2,a=float(j)*2.4,q=exp(-r*.35);b+=texture(img,(f+vec2(cos(a)*1.6,sin(a))*r)/rejilla).rgb*q;w+=q;}b/=w;}
  // la letra sustituye a su base en vez de sumarse: así ningún canal se quema y el color no cambia
