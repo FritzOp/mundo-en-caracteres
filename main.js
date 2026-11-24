@@ -495,12 +495,15 @@ const cabezas = grupos.map(g => orden.find(o => o.grupo === g.id));
   ponUrl();
 }
 // El menú marca el grupo en pantalla y lo centra
-function ponNav() {
+function ponNav(ya) {
   const n = nav.find(n => (n.dataset.f || '') === famAnt);
   if (!n) return;
   const caja = n.parentNode;
-  caja.scrollTo({ left: n.offsetLeft - (caja.clientWidth - n.offsetWidth) / 2, behavior: quieto ? 'auto' : 'smooth' });
+  caja.scrollTo({ left: n.offsetLeft - (caja.clientWidth - n.offsetWidth) / 2, behavior: quieto || ya ? 'auto' : 'smooth' });
 }
+// el ancho del menú cambia cuando llega la tipografía o se redimensiona: se vuelve a centrar
+if (document.fonts) document.fonts.ready.then(() => ponNav(true));
+for (const ev of ['load', 'resize']) addEventListener(ev, () => ponNav(true));
 // Centro y tamaño de la criatura, en unidades donde la pantalla mide 2 de alto
 const esc = { x: 0, y: 0, r: .5, ok: false };
 // envergadura de las más anchas, para que no pisen el texto
