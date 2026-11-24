@@ -4,56 +4,82 @@ CRIATURAS.push(
 { id:'lechuza', archivo:'lechuza.glsl', codigo:
 `// Oye en estéreo, con un oído más alto que el otro.
 vec4 criatura(vec3 p, float t) {
-  p.y += .1;
-  p.xz *= gira(.25 * sin(t * .4));
-  // cuerpo y alas plegadas
-  vec4 c = vec4(HUESO, elipse(p + vec3(0, .35, 0), vec3(.55, .85, .45)) * .8);
-  vec3 q = vec3(abs(p.x) - .5, p.y + .45, p.z + .08);
-  q.xy *= gira(-.12);
-  float plumas = .02 * sin(q.y * 26.);
-  c = une(c, vec4(AMBAR * .75, (elipse(q, vec3(.18, .85, .42)) + plumas) * .6));
-  // rama y garras
-  c = une(c, vec4(ROJO * .5, capsula(p, vec3(-1.5, -1.2, 0), vec3(1.5, -1.1, 0), .09)));
-
-  // la cabeza se ladea para escuchar
-  q = p - vec3(0, .62, .05);
-  q.xy *= gira(.5 * sin(t * .9) * smoothstep(-.2, .8, sin(t * .3)));
-  c = une(c, vec4(AMBAR * .8, esfera(q, .5)));
-  // disco facial en forma de corazón
-  vec3 f = vec3(abs(q.x) - .17, q.y - .02, q.z - .4);
-  f.xy *= gira(.3);
-  c = une(c, vec4(HUESO, elipse(f, vec3(.25, .36, .13))));
-  // ojos y pico
-  vec3 o = vec3(abs(q.x) - .18, q.y - .05, q.z - .51);
-  c = une(c, vec4(vec3(.01), esfera(o, .095)));
-  c = une(c, vec4(AMBAR * 1.2, elipse(q - vec3(0, -.15, .52), vec3(.05, .13, .09)) * .7));
-  return c;
+  p.xz *= gira(-.4 + .12 * sin(t * .4));
+  p.y += .04;
+  // cuerpo esbelto, pecho claro
+  vec3 b = p; b.x += .12 * b.y;
+  float d = elipse(b - vec3(0, -.05, 0), vec3(.42, .68, .38));
+  d = funde(d, elipse(b - vec3(0, -.5, -.08), vec3(.28, .5, .27)), .15);
+  float mota = step(.86, fract(sin(dot(floor(p.xy * 13.), vec2(12.9, 78.2))) * 43758.));
+  vec3 pecho = mix(HUESO, AMBAR * .8, smoothstep(.15, -.2, p.z));
+  vec4 c = vec4(mix(pecho, vec3(.35, .25, .15), mota * .6 * step(p.y, .2)), d * .7);
+  // alas plegadas, en hileras de plumas
+  vec3 w = vec3(abs(b.x) - .38, b.y + .2, b.z + .08);
+  w.xy *= gira(-.1);
+  float hil = sin(w.y * 24. + 3. * cos(w.z * 9.));
+  float ala = elipse(w, vec3(.13, .62, .33)) - .014 * hil;
+  ala = min(ala, elipse(w - vec3(-.06, -.5, -.1), vec3(.09, .48, .17)));
+  vec3 pl = mix(AMBAR * .75, vec3(.42, .36, .34), smoothstep(-.2, .8, sin(w.y * 12. + w.z * 8.)));
+  float lunar = step(.8, fract(sin(dot(floor(w.yz * 15.), vec2(39.3, 11.7))) * 4375.));
+  c = une(c, vec4(mix(pl, HUESO, lunar * .8), ala * .6));
+  // cola
+  c = une(c, vec4(AMBAR * .6, elipse(b - vec3(0, -1.0, -.2), vec3(.2, .28, .07)) * .7));
+  // patas y garras
+  vec3 q = vec3(abs(p.x - .06) - .15, p.yz);
+  c = une(c, vec4(HUESO * .85, cono(q, vec3(0, -.6, .1), vec3(.01, -.98, .16), .13, .05)));
+  for (int i = 0; i < 3; i++) {
+    float f = float(i) - 1.;
+    c = une(c, vec4(vec3(.45, .33, .28), cono(q, vec3(0, -.98, .16), vec3(f * .09, -1.04, .33), .04, .02)));
+  }
+  // rama torcida
+  vec3 r = p + vec3(0, 1.12 - .22 * p.x + .05 * sin(p.x * 4.), -.14);
+  float ra = max(length(r.yz) - .11 - .02 * sin(p.x * 11. + atan(r.y, r.z) * 3.), abs(p.x) - 1.05);
+  c = une(c, vec4(vec3(.3, .22, .17), ra * .6));
+  // cabeza que se ladea
+  q = p - vec3(-.07, .7, .06);
+  q.xy *= gira(.32 * sin(t * .9) * smoothstep(-.2, .8, sin(t * .3)));
+  c = une(c, vec4(mix(AMBAR * .85, vec3(.45, .35, .3), mota * .5), elipse(q, vec3(.43, .42, .39))));
+  // disco facial en corazón, con ribete
+  vec3 f = vec3(abs(q.x) - .15, q.y + .01, q.z - .27);
+  f.xy *= gira(.32);
+  float disco = elipse(f, vec3(.23, .34, .17));
+  float bor = smoothstep(.8, .92, length(f.xy / vec2(.23, .34)));
+  float valle = smoothstep(.05, .0, abs(q.x)) * step(0., q.y);
+  c = une(c, vec4(mix(HUESO * 1.02, vec3(.5, .28, .1), max(bor, valle * .7)), disco));
+  vec3 o = vec3(abs(q.x) - .16, q.y - .05, q.z - .4);
+  c = une(c, ojo(o, .135, vec3(.1, .045, .015), vec3(0, 0, 1), HUESO));
+  
+  return une(c, vec4(vec3(.95, .72, .6), cono(q, vec3(0, -.02, .42), vec3(0, -.19, .45), .05, .025)));
 }` },
 { id:'morpho', archivo:'mariposa_morpho.glsl', codigo:
 `// El azul no es pigmento: depende del ángulo.
 vec4 criatura(vec3 p, float t) {
-  p.y -= .1 * sin(t * 2.5);
-  p.yz *= gira(-.35);
-  p.xy *= gira(.2);
-  vec4 c = vec4(vec3(.12, .1, .12), capsula(p, vec3(0, -.4, 0), vec3(0, .35, 0), .07));
+  p.y -= .08 * sin(t * 2.5);
+  p.yz *= gira(-.3);
+  p.xy *= gira(.15);
+  // cuerpo en tres partes, cabeza y antenas unidas
   vec3 q = vec3(abs(p.x), p.yz);
-  c = une(c, vec4(HUESO * .6, capsula(q, vec3(.03, .35, 0), vec3(.28, .85, .1), .018)));
-
-  // aleteo
-  float a = .15 + .6 * (.5 + .5 * sin(t * 2.5));
-  q.xz *= gira(-a);
-  vec3 s = q - vec3(.72, .4, 0);
-  s.xy *= gira(-.5);
-  vec3 i = q - vec3(.5, -.48, 0);
-  i.xy *= gira(.5);
-  float d = min(elipse(s, vec3(.75, .48, .035)), elipse(i, vec3(.48, .52, .035)));
-
-  // borde negro y azul que cambia con el ala
-  float centro = min(length(s.xy / vec2(.75, .48)), length(i.xy / vec2(.48, .52)));
-  vec3 azul = mix(vec3(.1, .3, 1.25), CIAN * 1.3, .5 + .5 * sin(a * 6. + q.x * 3.));
-  float vena = smoothstep(.03, .0, abs(sin(atan(q.y, q.x) * 7.)) - .02);
-  vec3 ala = mix(azul, vec3(.06, .07, .12), smoothstep(.72, .84, centro));
-  return une(c, vec4(mix(ala, vec3(.05, .1, .3), vena * .5), d * .5));
+  float d = elipse(p - vec3(0, .12, 0), vec3(.1, .24, .1));
+  d = funde(d, cono(p, vec3(0, -.05, 0), vec3(0, -.55, -.02), .085, .035), .06);
+  d = funde(d, esfera(p - vec3(0, .4, .02), .1), .05);
+  d = min(d, curva(q, vec3(.03, .46, .03), vec3(.1, .75, .05), vec3(.32, .9, .08), .018, .014));
+  d = min(d, esfera(q - vec3(.32, .9, .08), .032));
+  vec4 c = vec4(vec3(.42, .28, .2), d * .8);
+  // alas: nacen del tórax y se ensanchan
+  float ang = .12 + .5 * (.5 + .5 * sin(t * 2.5));
+  vec3 w = q - vec3(.05, .1, 0); w.xz *= gira(-ang);
+  vec2 v = w.xy;
+  float A = atan(v.y, v.x), R = length(v);
+  float sup = 1.22 * pow(max(0., cos((A - .62) * 1.25)), .55) * (1. + .04 * sin(A * 14.));
+  float inf_ = .88 * pow(max(0., cos((A + .72) * 1.3)), .5) * (1. + .05 * sin(A * 12.));
+  float lim = max(sup, inf_);
+  float ala = max((R - lim) * .5, abs(w.z) - .025);
+  float b = R / max(lim, .01);
+  vec3 azul = mix(vec3(.1, .3, 1.1), CIAN * 1.1, .5 + .5 * sin(ang * 6. + R * 3.));
+  azul = mix(azul, vec3(.05, .12, .4), smoothstep(.12, .0, abs(sin(A * 7.))) * .6);
+  azul = mix(azul, vec3(.16, .15, .34), smoothstep(.8, .9, b));
+  azul = mix(azul, HUESO, step(.75, sin(A * 26.)) * smoothstep(.82, .84, b) * smoothstep(.9, .88, b));
+  return une(c, vec4(azul, ala * .55));
 }` },
 { id:'cobra', archivo:'cobra_real.glsl', codigo:
 `// La capucha son costillas que se abren.
@@ -70,162 +96,247 @@ vec4 criatura(vec3 p, float t) {
   // cuello que se mece
   vec3 q = p;
   q.x -= .22 * sin(q.y * 2.2 + t * 1.2) * smoothstep(-1., 1., q.y);
-  d = funde(d, capsula(q, vec3(.2, -.9, 0), vec3(0, .8, .1), .15), .2);
+  d = funde(d, capsula(q, vec3(.2, -.9, 0), vec3(0, .9, .1), .16), .2);
   // capucha
   float abre = .42 + .08 * sin(t * 1.2);
-  d = funde(d, elipse(q - vec3(0, .25, 0), vec3(abre, .5, .09)), .1);
+  d = funde(d, elipse(q - vec3(0, .42, 0), vec3(abre, .58, .1)), .1);
   // cabeza
-  d = funde(d, elipse(q - vec3(0, 1., .2), vec3(.25, .19, .4)), .1);
+  d = funde(d, elipse(q - vec3(0, .96, .18), vec3(.23, .17, .36)), .1);
   float bandas = smoothstep(.2, .5, sin(q.y * 16.)) * step(q.z, .4);
   vec4 c = vec4(mix(vec3(.45, .55, .2), AMBAR, bandas), d * .6);
   // ojos y lengua
-  vec3 o = vec3(abs(q.x) - .19, q.y - 1.08, q.z - .38);
-  c = une(c, vec4(AMBAR * 1.8, esfera(o, .07)));
+  vec3 o = vec3(abs(q.x) - .165, q.y - 1.02, q.z - .34);
+  c = une(c, ojo(o, .115, AMBAR, vec3(.1, 0, 1), vec3(.5, .6, .22)));
   float saca = .15 + .15 * max(0., sin(t * 5.));
-  c = une(c, vec4(ROJO * 1.5, capsula(q, vec3(0, .92, .55), vec3(0, .78, .6 + saca), .03)));
+  c = une(c, vec4(ROJO * 1.5, capsula(q, vec3(0, .92, .48), vec3(0, .84, .52 + saca), .03)));
   return c;
 }` },
 // ---------- Fauna fantástica ----------
 { id:'ciervo', archivo:'ciervo_de_luna.glsl', codigo:
-`// Lleva la luna entre las astas.
+`// Sostiene la luna entre las astas.
 vec4 criatura(vec3 p, float t) {
-  p.xz *= gira(.65 + .3 * sin(t * .35));
-  p.y += .25;
-  // cuerpo, cuello y cabeza
-  float d = elipse(p - vec3(-.1, -.2, 0), vec3(.68, .32, .28));
-  d = funde(d, capsula(p, vec3(.4, -.05, 0), vec3(.68, .5, 0), .15), .2);
-  d = funde(d, elipse(p - vec3(.82, .56, 0), vec3(.27, .13, .13)), .1);
-  // patas al paso
-  vec3 q = p;
-  float lado = sign(p.z);
-  q.z = abs(q.z) - .17;
-  float m = .13 * sin(t * 1.6) * lado;
-  d = funde(d, capsula(q, vec3(.35, -.35, 0), vec3(.4 + m, -1.15, 0), .06), .1);
-  d = funde(d, capsula(q, vec3(-.55, -.35, 0), vec3(-.55 - m, -1.15, 0), .065), .1);
-  vec4 c = vec4(mix(AZUL * 1.2, HUESO, smoothstep(-.6, .6, p.y)), d * .7);
-
-  // astas
-  q = vec3(p.x - .65, p.y - .66, abs(p.z) - .06);
-  float a = capsula(q, vec3(0), vec3(-.12, .4, .3), .03);
-  a = min(a, capsula(q, vec3(-.12, .4, .3), vec3(.08, .85, .36), .025));
-  a = min(a, capsula(q, vec3(-.07, .25, .18), vec3(.2, .45, .28), .022));
-  a = min(a, capsula(q, vec3(-.12, .4, .3), vec3(-.4, .65, .4), .022));
-  c = une(c, vec4(AMBAR * 1.2, a * .8));
-  // luna y ojo
-  c = une(c, vec4(HUESO * (1.5 + .15 * sin(t * 2.)), esfera(p - vec3(.6, 1.35, 0), .21)));
-  q = vec3(p.x - .85, p.y - .62, abs(p.z) - .11);
-  c = une(c, vec4(CIAN * 1.8, esfera(q, .035)));
-  return c;
+  p.xz *= gira(.22 * sin(t * .35) - .12);
+  p.y += .12;
+  // cuerpo y cuello
+  float d = elipse(p - vec3(.2, -.14, 0), vec3(.52, .24, .22));
+  d = funde(d, elipse(p - vec3(-.18, -.06, 0), vec3(.24, .3, .22)), .12);
+  d = funde(d, cono(p, vec3(-.24, .02, 0), vec3(-.42, .52, .02), .18, .095), .12);
+  // cabeza
+  vec3 k = p - vec3(-.5, .6, .04);
+  k.xy *= gira(-.25); k /= 1.08;
+  d = funde(d, cono(k, vec3(.06, .02, 0), vec3(-.24, -.02, 0), .115, .06), .06);
+  vec3 o = vec3(k.x - .1, k.y - .08, abs(k.z) - .12);
+  d = funde(d, cono(o, vec3(0), vec3(.14, .06, .1), .05, .015), .03);
+  // patas esbeltas
+  vec3 q = vec3(p.xy, abs(p.z) - .13);
+  float lado = sign(p.z), m = .05 * sin(t * 1.2) * lado;
+  d = funde(d, cono(q, vec3(-.22, -.2, 0), vec3(-.26 + m, -.68, 0), .1, .05), .06);
+  d = funde(d, cono(q, vec3(-.26 + m, -.68, 0), vec3(-.26, -1.12, 0), .05, .04), .03);
+  d = funde(d, cono(q, vec3(.56, -.16, 0), vec3(.66 - m, -.62, 0), .16, .055), .06);
+  d = funde(d, cono(q, vec3(.66 - m, -.62, 0), vec3(.58, -1.12, 0), .055, .04), .03);
+  // cola que flota
+  q = p; q.y -= .05 * sin(p.x * 6. - t * 2.) * smoothstep(.6, 1.1, p.x);
+  d = funde(d, curva(q, vec3(.66, -.06, 0), vec3(.98, -.1, 0), vec3(1.15, -.45, 0), .1, .02), .06);
+  float brillo = smoothstep(.25, .0, abs(sin(p.x * 5. + p.y * 7. + t * .5)));
+  vec3 piel = mix(vec3(.62, .75, .95), HUESO, smoothstep(-.3, .6, p.y));
+  vec4 c = vec4(mix(piel, CIAN * 1.12, brillo * .35), d * .7);
+  // astas simétricas
+  q = p - vec3(-.44, .7, .02); q.x = abs(q.x);
+  float a = curva(q, vec3(.04, 0, 0), vec3(.62, .02, 0), vec3(.5, .75, 0), .04, .018);
+  a = min(a, cono(q, vec3(.24, .1, 0), vec3(.24, .36, .08), .028, .01));
+  a = min(a, cono(q, vec3(.42, .26, 0), vec3(.66, .5, .05), .028, .01));
+  a = min(a, cono(q, vec3(.47, .4, 0), vec3(.36, .66, .06), .026, .01));
+  a = min(a, cono(q, vec3(.1, .03, 0), vec3(.2, .16, .22), .025, .01));
+  c = une(c, vec4(vec3(.55, .85, 1.12), a * .8));
+  // luna creciente y perla
+  q = p - vec3(-.44, 1.06, 0);
+  float luna = max(elipse(q, vec3(.25, .25, .1)), -(length(q.xy - vec2(.1, .06)) - .2));
+  c = une(c, vec4(vec3(1.5, 1.6, 1.7), luna * .7));
+  
+  o = vec3(k.x + .03, k.y - .04, abs(k.z) - .1);
+  c = une(c, ojo(o, .085, vec3(.1, .5, .9), vec3(-.25, .1, 1), HUESO));
+  // peñasco
+  q = p + vec3(-.15, 1.36, 0);
+  float roca = caja(q, vec3(.72, .2, .42)) - .03 + .05 * sin(q.x * 9.) * sin(q.y * 8. + q.z * 5.);
+  float runa = step(.7, fract(sin(floor(q.x * 9.) * 91.) * 47.)) * step(abs(q.y - .02), .06) * step(.3, q.z);
+  return une(c, vec4(mix(vec3(.16, .2, .28), CIAN * 1.5, runa), roca * .6));
 }` },
 { id:'ballena', archivo:'ballena_de_nubes.glsl', codigo:
-`// Nada por el cielo y deja lluvia.
+`// Cúmulos con forma de ballena; lleva estrellas en el vientre.
 vec4 criatura(vec3 p, float t) {
-  p.xz *= gira(.45 + .2 * sin(t * .3));
-  p.y -= .25 + .08 * sin(t * .8);
-  vec3 q = p;
-  q.y -= .15 * sin(t * .8 - q.x * 1.4) * smoothstep(0., 1.5, q.x);
-  // cuerpo, con surcos en el vientre
-  float surco = .025 * sin(q.z * 45.) * smoothstep(0., -.2, q.y) * smoothstep(.5, -.3, q.x);
-  float d = elipse(q + vec3(.25, 0, 0), vec3(1., .46, .42)) + surco;
-  d = funde(d, capsula(q, vec3(.2, .02, 0), vec3(1.2, .12, 0), .12), .4);
-  // cola y aletas
-  vec3 f = vec3(q.x - 1.35, q.y - .14, abs(q.z) - .25);
-  f.xz *= gira(-.6);
-  d = funde(d, elipse(f, vec3(.17, .05, .36)), .1);
-  f = vec3(q.x + .35, q.y + .3, abs(q.z) - .55);
-  f.yz *= gira(.4 + .25 * sin(t * .8));
-  d = funde(d, elipse(f, vec3(.18, .05, .42)), .1);
-  vec4 c = vec4(mix(HUESO, AZUL * 1.2, smoothstep(-.3, .15, q.y)), d * .6);
-  f = vec3(q.x + .85, q.y + .02, abs(q.z) - .33);
-  c = une(c, vec4(AMBAR * 1.8, esfera(f, .05)));
-
-  // lluvia: gotas que caen en bucle
-  q = p + vec3(0, .55, 0);
-  vec2 id = clamp(round(q.xz / .34), vec2(-3, -1), vec2(3, 1));
-  q.xz -= id * .34;
-  float cae = fract(t * .6 + fract(sin(dot(id, vec2(12.9, 78.2))) * 43.7));
-  q.y += cae * 1.1;
-  return une(c, vec4(CIAN * (1.7 - cae), capsula(q, vec3(0), vec3(0, .14, 0), .022) * .6));
+  p.xz *= gira(.3 * sin(t * .3) - .25);
+  p.y -= .06 * sin(t * .8) - .02;
+  p.y -= .07 * sin(t * .9 - p.x * 1.3) * smoothstep(-.2, 1.3, p.x);
+  // cabeza, lomo y cola que sube
+  float d = elipse(p - vec3(-.55, -.02, 0), vec3(.8, .42, .44));
+  d = funde(d, elipse(p - vec3(-1.05, .02, 0), vec3(.36, .22, .3)), .2);
+  d = funde(d, curva(p, vec3(-.1, 0, 0), vec3(.75, -.05, 0), vec3(1.12, .5, 0), .4, .08), .25);
+  // aletas de la cola
+  vec3 f = p - vec3(1.14, .56, 0);
+  vec3 g = f; g.xy *= gira(.55);
+  d = funde(d, elipse(g - vec3(.0, .2, .08), vec3(.12, .3, .06)), .08);
+  g = f; g.xy *= gira(-.95);
+  d = funde(d, elipse(g - vec3(-.0, .27, -.02), vec3(.12, .36, .06)), .08);
+  // aletas pectorales
+  f = vec3(p.x + .42, p.y + .2, abs(p.z) - .32);
+  f.xy *= gira(-.75 + .15 * sin(t * .9)); f.yz *= gira(.5);
+  d = funde(d, elipse(f + vec3(0, .38, 0), vec3(.15, .48, .07)), .12);
+  // volumen de nube
+  d -= .035 * sin(p.x * 9. + 1.) * sin(p.y * 10.) * sin(p.z * 9.) + .016 * sin(p.x * 19.) * sin(p.y * 21.) * sin(p.z * 18. + t);
+  vec3 tono = mix(vec3(.45, .62, .95), HUESO, smoothstep(-.35, .2, p.y));
+  // estrellas y boca
+  vec3 id = floor(p * 11.);
+  float est = step(.9, fract(sin(dot(id, vec3(12.9, 78.2, 37.7))) * 43758.)) * smoothstep(.12, -.1, p.y) * smoothstep(-.95, -.5, p.x);
+  tono = mix(tono, fract(id.x * .37) > .5 ? AMBAR * 1.7 : CIAN * 1.7, est * (.6 + .4 * sin(t * 2. + id.x * 2.)));
+  float boca = smoothstep(.035, .0, abs(p.y + .1 - .12 * (p.x + 1.) * (p.x + .2))) * smoothstep(-.35, -.5, p.x);
+  tono *= 1. - .75 * boca;
+  vec4 c = vec4(tono, d * .55);
+  f = vec3(p.x + .38, p.y - .06, abs(p.z) - .38);
+  c = une(c, ojo(f, .13, vec3(.15, .35, .8), vec3(-.25, .05, 1), vec3(.6, .72, .95)));
+  // jirones de niebla
+  for (int i = 0; i < 3; i++) {
+    float k = float(i);
+    vec3 q = p - vec3(.4, -.22 - .05 * k, .2 - .2 * k);
+    q.y -= .07 * sin(q.x * 5. - t * 2. + k * 2.);
+    c = une(c, vec4(vec3(.5, .65, .9), cono(q, vec3(-.3, 0, 0), vec3(.75 - .12 * k, .08, 0), .035, .005) * .6));
+  }
+  return c;
 }` },
 { id:'zorro', archivo:'zorro_de_brasa.glsl', codigo:
-`// La cola es una hoguera.
+`// Roca volcánica; la cola es una hoguera.
 vec4 criatura(vec3 p, float t) {
-  p.xz *= gira(-.35 + .25 * sin(t * .4));
-  p.y += .25;
-  // sentado: cuerpo, pecho y patas
-  float d = elipse(p + vec3(0, .45, .1), vec3(.45, .6, .48));
-  vec3 q = vec3(abs(p.x), p.yz);
-  d = funde(d, capsula(q, vec3(.17, -.3, .25), vec3(.17, -1., .42), .1), .12);
-  // cabeza, hocico y orejas
-  vec3 k = p - vec3(0, .35, .15);
-  k.xy *= gira(.12 * sin(t * .9));
-  d = funde(d, elipse(k, vec3(.4, .32, .33)), .1);
-  d = funde(d, elipse(k - vec3(0, -.08, .32), vec3(.14, .12, .3)), .12);
-  vec3 o = vec3(abs(k.x) - .26, k.y - .38, k.z);
-  o.xy *= gira(.25);
-  d = funde(d, elipse(o, vec3(.11, .3, .07)), .05);
-  float blanco = smoothstep(.1, .3, p.z) * smoothstep(.25, .05, abs(p.x)) * smoothstep(.25, .1, p.y);
-  vec4 c = vec4(mix(vec3(.9, .35, .12), HUESO, blanco), d * .7);
-  c = une(c, vec4(vec3(.02), esfera(k - vec3(0, -.05, .61), .055)));
-  o = vec3(abs(k.x) - .17, k.y - .05, k.z - .29);
-  c = une(c, vec4(AMBAR * 1.9, elipse(o, vec3(.06, .045, .05))));
-
+  p.xz *= gira(.25 * sin(t * .4) + .25);
+  p.y += .08; p.x -= .08;
+  // pecho, lomo y grupa
+  float d = elipse(p - vec3(-.3, -.12, 0), vec3(.3, .33, .25));
+  d = funde(d, elipse(p - vec3(.12, -.12, 0), vec3(.42, .22, .2)), .12);
+  d = funde(d, elipse(p - vec3(.45, -.16, 0), vec3(.24, .25, .22)), .1);
+  // cuello y cabeza
+  d = funde(d, cono(p, vec3(-.36, .05, 0), vec3(-.5, .42, .06), .22, .18), .1);
+  vec3 k = p - vec3(-.56, .52, .1);
+  k.xy *= gira(.06 * sin(t * .9));
+  k.xz *= gira(.35); k /= 1.08;
+  d = funde(d, elipse(k, vec3(.22, .2, .24)), .06);
+  d = funde(d, cono(k, vec3(-.1, -.05, 0), vec3(-.4, -.11, 0), .12, .05), .06);
+  // mejillas y orejas
+  vec3 o = vec3(k.xy, abs(k.z));
+  d = funde(d, cono(o, vec3(.02, -.06, .16), vec3(.1, -.16, .3), .1, .02), .05);
+  float ore = cono(o, vec3(.04, .14, .14), vec3(.08, .52, .21), .11, .012);
+  ore = max(ore, -cono(o, vec3(-.06, .2, .16), vec3(.02, .48, .22), .07, .01));
+  d = funde(d, ore, .04);
+  // patas
+  vec3 q = vec3(p.xy, abs(p.z) - .15);
+  float m = .04 * sin(t * 1.2) * sign(p.z);
+  d = funde(d, cono(q, vec3(-.34, -.25, 0), vec3(-.38 + m, -.7, 0), .12, .065), .06);
+  d = funde(d, cono(q, vec3(-.38 + m, -.7, 0), vec3(-.38, -1.02, 0), .065, .055), .03);
+  d = funde(d, elipse(q - vec3(-.43, -1.06, 0), vec3(.12, .055, .08)), .03);
+  d = funde(d, cono(q, vec3(.46, -.25, 0), vec3(.4, -.6, 0), .17, .075), .06);
+  d = funde(d, cono(q, vec3(.4, -.6, 0), vec3(.56, -.78, 0), .07, .055), .03);
+  d = funde(d, cono(q, vec3(.56, -.78, 0), vec3(.52, -1.02, 0), .05, .05), .03);
+  d = funde(d, elipse(q - vec3(.47, -1.06, 0), vec3(.12, .055, .08)), .03);
+  // facetas y grietas de magma
+  d += .015 * (abs(sin(p.x * 13. + p.y * 5.)) - abs(sin(p.y * 12. + p.z * 9.)));
+  float g = grieta(p * 1.15 + .3);
+  float late = .7 + .3 * sin(t * 2. + p.x * 4.);
+  vec3 roca = mix(vec3(.27, .21, .25), vec3(.46, .36, .4), smoothstep(-.6, .7, p.y));
+  vec4 c = vec4(mix(roca, vec3(1.8, .65, .14) * late, g * smoothstep(-1.1, -.3, p.y)), d * .6);
+  // ojos y trufa
+  c = une(c, ojo(o - vec3(-.12, .05, .15), .095, vec3(1., .5, .08), vec3(-.45, 0, 1), vec3(.55, .32, .4)));
+  c = une(c, vec4(vec3(.05), esfera(k - vec3(-.43, -.1, 0), .045)));
   // cola de fuego
   for (int i = 0; i < 9; i++) {
     float f = float(i) / 8.;
-    vec3 b = vec3(.45 + .55 * sin(f * 2.4), -.85 + f * 1.9, -.35);
-    b.x += .13 * f * sin(t * 4. - f * 5.);
-    float r = .12 + .17 * sin(f * 3.1);
-    vec3 fuego = mix(vec3(1.5, .4, .1), vec3(1.6, 1.2, .4), f);
-    c = une(c, vec4(fuego, (esfera(p - b, r) + .03 * sin(p.y * 14. - t * 7.)) * .6));
+    vec3 b = vec3(.56 + .52 * f + .1 * sin(f * 5.), -.1 + 1.0 * f, -.02);
+    b.xy += vec2(.07, .03) * f * sin(t * 4. - f * 6.);
+    float r = .07 + .25 * sin(min(1., f * 1.15) * 3.0) * (1. - .35 * f);
+    vec3 s = p - b;
+    float l = esfera(s, r) + .05 * sin(s.x * 13. + t * 3.) * sin(p.y * 12. - t * 7.);
+    vec3 fu = mix(vec3(1.1, .22, .08), vec3(1.8, 1.0, .3), smoothstep(-.1, 1.1, f + .12 * sin(p.x * 9. + p.y * 11. - t * 5.)));
+    c = une(c, vec4(fu, l * .55));
   }
-  return c;
+  for (int i = 0; i < 3; i++) {
+    float f = float(i);
+    vec3 s = p - vec3(.95 + .14 * f, .95, 0); s.x -= .06 * sin(s.y * 9. - t * 6. + f);
+    c = une(c, vec4(vec3(1.8, 1.0, .3), cono(s, vec3(0), vec3(.12, .28 - .07 * f, 0), .08, .004) * .6));
+  }
+  // losa
+  q = p + vec3(-.05, 1.24, 0);
+  return une(c, vec4(vec3(.13, .13, .16), (caja(q, vec3(.88, .1, .42)) - .02 + .025 * sin(q.x * 9.) * sin(q.z * 11.)) * .7));
 }` },
 // ---------- Monstruos ----------
 { id:'dragon', archivo:'dragon.glsl', codigo:
-`// Alas abiertas y una brasa en la garganta.
+`// Cuatro patas, alas de murciélago y brasas entre las placas.
 vec4 criatura(vec3 p, float t) {
-  p.xz *= gira(.3 * sin(t * .4) - .15);
-  p.y -= .08 * sin(t * 2.);
-  // cuerpo, cuello y cola
-  float d = elipse(p + vec3(0, .35, 0), vec3(.34, .55, .36));
-  for (int i = 0; i < 8; i++) {
-    float f = float(i) / 7.;
-    vec3 n = vec3(.16 * sin(f * 4. + t * .6), .05 + .8 * f, .1 + .4 * f * f);
-    d = funde(d, esfera(p - n, .2 - .06 * f), .1);
-    vec3 k = vec3(1.2 * f, -.8 - .35 * sin(f * 3.), .1 + .25 * sin(f * 4. + t));
-    d = funde(d, esfera(p - k, .2 - .15 * f), .12);
-  }
-  d += .012 * sin(p.x * 28.) * sin(p.y * 28.);
-  // cabeza, mandíbula y cuernos
-  vec3 k = p - vec3(.16 * sin(4. + t * .6), .9, .55);
-  d = funde(d, elipse(k, vec3(.21, .17, .22)), .08);
-  d = funde(d, elipse(k - vec3(0, -.06, .26), vec3(.13, .1, .24)), .08);
-  float abre = .5 + .5 * sin(t * 1.3);
-  d = funde(d, elipse(k - vec3(0, -.2 - .08 * abre, .2), vec3(.1, .05, .22)), .03);
-  vec3 u = vec3(abs(k.x), k.yz);
-  d = funde(d, capsula(u, vec3(.12, .1, -.05), vec3(.26, .5, -.2), .04), .04);
-  vec4 c = vec4(mix(ROJO * 1.2, AMBAR, smoothstep(.1, .3, p.z) * smoothstep(.1, -.5, p.y)), d * .6);
-  c = une(c, vec4(AMBAR * 2., esfera(u - vec3(.13, .05, .17), .05)));
+  p.xz *= gira(.18 * sin(t * .4) + .1);
+  float resp = .02 * sin(t * 1.6);
+  // pecho, vientre y cadera
+  float d = elipse(p - vec3(-.42, -.18, .05), vec3(.3 + resp, .4, .3));
+  d = funde(d, elipse(p - vec3(.0, -.35, 0), vec3(.42, .26, .26)), .15);
+  d = funde(d, elipse(p - vec3(.32, -.42, 0), vec3(.28, .27, .27)), .12);
+  // cuello en S y cola que se enrosca
+  float ca = .05 * sin(t * .8);
+  d = funde(d, curva(p, vec3(-.45, .05, .05), vec3(-.3, .65, .05), vec3(-.72 + ca, .74, .16), .22, .12), .12);
+  d = funde(d, curva(p, vec3(.45, -.5, 0), vec3(.95, -1.1, .1), vec3(1.3, -.62, .15), .17, .07), .12);
+  float cola = curva(p, vec3(1.3, -.62, .15), vec3(1.42, -.2, .15), vec3(1.06, -.24 + .05 * sin(t), .15), .075, .035);
+  d = min(d, cola);
   // patas
-  vec3 q = vec3(abs(p.x), p.yz);
-  c = une(c, vec4(ROJO, capsula(q, vec3(.25, -.6, .15), vec3(.4, -1.1, .4), .11)));
-
-  // alas: un abanico con el borde mordido
-  q = vec3(abs(p.x) - .18, p.y + .05, p.z + .15);
-  q.xz *= gira(.3 + .35 * sin(t * 2.));
-  float a = atan(q.y, q.x), r = length(q.xy);
-  float borde = 1.5 - .28 * abs(sin(a * 4.5));
-  float ala = max(abs(q.z) - .025, r - borde);
-  ala = max(ala, max((a - .95) * r, (-.45 - a) * r));
-  float hueso = smoothstep(.1, .0, abs(sin(a * 4.5)));
-  c = une(c, vec4(mix(vec3(.45, .1, .16), AMBAR, hueso * .8), ala * .45));
-
+  vec3 q = vec3(p.xy, abs(p.z) - .2);
+  d = funde(d, cono(q, vec3(-.42, -.4, 0), vec3(-.5, -.8, .06), .16, .1), .08);
+  d = funde(d, cono(q, vec3(-.5, -.8, .06), vec3(-.48, -1.14, .06), .1, .075), .04);
+  d = funde(d, elipse(q - vec3(-.56, -1.18, .07), vec3(.17, .06, .11)), .04);
+  d = funde(d, cono(q, vec3(.36, -.5, .04), vec3(.22, -.82, .08), .2, .1), .08);
+  d = funde(d, cono(q, vec3(.22, -.82, .08), vec3(.36, -1.14, .08), .09, .065), .04);
+  d = funde(d, elipse(q - vec3(.28, -1.18, .08), vec3(.16, .06, .11)), .04);
+  // cabeza con mandíbula
+  vec3 k = p - vec3(-.76 + ca, .78, .18);
+  k.xy *= gira(-.4); k /= 1.05;
+  float abre = .5 + .5 * sin(t * 1.1);
+  d = funde(d, elipse(k, vec3(.19, .14, .14)), .06);
+  d = funde(d, cono(k, vec3(-.08, .02, 0), vec3(-.36, -.02, 0), .1, .06), .05);
+  vec3 j = k + vec3(0, .07, 0); j.xy *= gira(-.15 - .35 * abre);
+  d = funde(d, cono(j, vec3(0), vec3(-.3, 0, 0), .07, .035), .03);
+  vec3 u = vec3(k.xy, abs(k.z));
+  float cue = curva(u, vec3(.08, .1, .08), vec3(.42, .12, .16), vec3(.38, .42, .2), .05, .01);
+  cue = min(cue, cono(u, vec3(.12, .0, .12), vec3(.32, -.02, .24), .04, .005));
+  // espinas a lo largo del lomo
+  float esp = .03 * max(0., sin(p.x * 22. + p.y * 10.));
+  d -= esp * smoothstep(.12, .02, abs(p.z - .05)) + .008 * sin(p.x * 34.) * sin(p.y * 34.);
+  // placas: ranuras que dejan ver las brasas
+  float ranura = smoothstep(.2, .05, abs(sin(p.y * 15. + p.x * 4.)));
+  float frente = smoothstep(-.1, -.45, p.x - .25 * p.y) * step(-1., p.y);
+  vec3 piel = mix(vec3(.62, .1, .16), vec3(.95, .28, .16), smoothstep(-.6, .7, p.y));
+  piel = mix(piel, vec3(1.7, .65, .15), ranura * frente * (.5 + .3 * sin(t * 2.)));
+  piel = mix(piel, vec3(1.7, .7, .2), smoothstep(1.2, 1.05, length(p.xy - vec2(1.0, -1.35))) * 0. + step(d, cola + .001) * smoothstep(1.25, 1.02, p.x) * step(-.4, p.y) * step(.9, p.x));
+  vec4 c = vec4(piel, d * .6);
+  c = une(c, vec4(HUESO * .9, cue * .7));
+  c = une(c, ojo(u - vec3(-.06, .07, .1), .1, AMBAR, vec3(-.35, .1, 1), vec3(.7, .2, .16)));
+  // alas: muñeca arriba y cuatro dedos
+  for (int i = 0; i < 2; i++) {
+    float s = i == 0 ? 1. : -1.;
+    vec3 w = p - vec3(i == 0 ? -.05 : -.45, .0, i == 0 ? -.15 : -.35);
+    w.x *= s;
+    float esc = i == 0 ? 1. : .72; w /= esc;
+    w.yz *= gira(.12 * sin(t * 1.4) - .1);
+    w.xz *= gira(i == 0 ? -.12 : .45);
+    vec2 m = vec2(.2, .78);
+    vec2 r2 = w.xy - m;
+    float a = atan(r2.y, r2.x), r = length(r2);
+    float dedo = abs(sin((a - .12) * 2.6));
+    float lim = 1.28 - .25 * smoothstep(0., -1.4, a) - .24 * dedo;
+    float ala = max(abs(w.z - .12 * r * r) - .022, r - lim);
+    ala = max(ala, max((a - .14) * r, (-2.05 - a) * r));
+    float hue = smoothstep(.12, .0, dedo);
+    vec3 tono = mix(vec3(.42, .09, .12), vec3(.85, .5, .3), hue);
+    c = une(c, vec4(tono, ala * .4 * esc));
+    float br = cono(w, vec3(0, 0, 0), vec3(m, 0.), .07, .05);
+    br = min(br, cono(w, vec3(m, 0.), vec3(m + vec2(-.05, .16), 0.), .04, .005));
+    br = min(br, cono(w, vec3(m, 0.), vec3(m + vec2(1.26, .16), .18), .045, .012));
+    c = une(c, vec4(vec3(.75, .35, .25), br * .7 * esc));
+  }
   // aliento
-  float fuego = smoothstep(.3, 1., abre);
-  q = k - vec3(0, -.22, .55);
-  return une(c, vec4(vec3(1.8, .9, .25),
-    (elipse(q, vec3(.02 + .12 * fuego)) + .03 * fuego * sin(q.y * 20. + t * 14.)) * .5));
+  float fuego = smoothstep(.55, 1., abre);
+  q = k - vec3(-.42 - .1 * fuego, -.08, 0);
+  return une(c, vec4(vec3(1.8, .9, .25), (elipse(q, vec3(.01) + fuego * vec3(.17, .08, .08)) + .02 * fuego * sin(q.x * 25. + t * 15.)) * .5));
 }` },
 { id:'limo', archivo:'limo.glsl', codigo:
 `// Se tragó algo y todavía brilla.
@@ -247,53 +358,57 @@ vec4 criatura(vec3 p, float t) {
   // burbujas que suben
   for (int i = 0; i < 5; i++) {
     float f = float(i), s = fract(t * .25 + f * .37);
-    vec3 b = vec3(.6 * sin(f * 2.4), -.5 + 1.6 * s, .45 * cos(f * 2.4));
+    vec3 b = vec3(.6 * sin(f * 2.4), -.55 + 1.15 * s, .45 * cos(f * 2.4));
     d = esfera(p - b, .13 * sin(s * 3.14) + .01);
     c = une(c, vec4(vec3(.6, 1.35, .4), d * .7));
   }
   // ojos desparejos
-  c = une(c, vec4(HUESO * 1.3, esfera(p - vec3(-.33, .3, .8), .2)));
-  c = une(c, vec4(HUESO * 1.3, esfera(p - vec3(.36, .42, .76), .14)));
+  c = une(c, vec4(HUESO * 1.3, esfera(p - vec3(-.3, .3, .8), .135)));
+  c = une(c, vec4(HUESO * 1.3, esfera(p - vec3(.3, .36, .8), .115)));
   vec2 m = .05 * vec2(sin(t * .9), cos(t * .7));
-  c = une(c, vec4(vec3(.01), esfera(p - vec3(-.33 + m.x, .3 + m.y, .95), .1)));
-  c = une(c, vec4(vec3(.01), esfera(p - vec3(.36 + m.x, .42 + m.y, .87), .07)));
+  c = une(c, vec4(vec3(.01), esfera(p - vec3(-.3 + m.x, .3 + m.y, .88), .085)));
+  c = une(c, vec4(vec3(.01), esfera(p - vec3(.3 + m.x, .36 + m.y, .87), .07)));
   return c;
 }` },
 { id:'mimico', archivo:'mimico.glsl', codigo:
 `// No abras ese cofre.
 vec4 criatura(vec3 p, float t) {
-  p.xz *= gira(.45 + .15 * sin(t * .6));
-  p.yz *= gira(.12);
-  p.y += .25;
-  float abre = .35 + .3 * (.5 + .5 * sin(t * 1.4));
+  p.xz *= gira(.42 + .12 * sin(t * .6));
+  p.yz *= gira(.14);
+  p.y += .22; p *= 1.12;
+  float abre = .42 + .22 * (.5 + .5 * sin(t * 1.4));
   // base hueca
-  float d = caja(p + vec3(0, .45, 0), vec3(.95, .42, .6));
-  d = max(d, -caja(p + vec3(0, .2, 0), vec3(.85, .35, .5)));
+  float d = caja(p + vec3(0, .45, 0), vec3(.9, .42, .58)) - .02;
+  d = max(d, -caja(p + vec3(0, .1, 0), vec3(.8, .42, .48)));
   float tabla = smoothstep(.06, .0, abs(fract(p.y * 4.) - .5) - .04);
-  vec4 c = vec4(mix(vec3(.5, .26, .1), vec3(.2, .09, .03), tabla), d * .8);
-  // tapa con bisagra atrás
-  vec3 q = p - vec3(0, 0, -.6);
+  vec4 c = vec4(mix(vec3(.55, .28, .1), vec3(.22, .1, .04), tabla), d * .8);
+  // tapa: gira en la bisagra de atrás y cierra justo sobre la base
+  vec3 q = p - vec3(0, -.01, -.58);
   q.yz *= gira(abre);
-  q.z -= .6;
-  float tapa = max(length(q.yz / vec2(.75, 1.)) - .6, -q.y);
-  tapa = max(tapa, abs(q.x) - .95);
-  tapa = max(tapa, -(length((q.yz + vec2(.02, 0)) / vec2(.65, 1.)) - .5));
-  c = une(c, vec4(vec3(.55, .29, .11), tapa * .6));
-  // herrajes
-  float h = max(abs(abs(p.x) - .7) - .07, caja(p + vec3(0, .45, 0), vec3(.98, .45, .63)));
-  h = max(h, -caja(p + vec3(0, .2, 0), vec3(.85, .4, .5)));
-  c = une(c, vec4(AMBAR, h * .8));
-  // dientes arriba y abajo
-  vec3 a = vec3(p.x - .19 * clamp(round(p.x / .19), -4., 4.), p.y - .03, p.z - .56);
-  c = une(c, vec4(HUESO, elipse(a, vec3(.07, .19, .05)) * .7));
-  a = vec3(q.x - .19 * clamp(round(q.x / .19), -4., 4.), q.y + .02, q.z - .54);
-  c = une(c, vec4(HUESO, elipse(a, vec3(.07, .18, .05)) * .7));
-  // lengua y ojo
-  a = p; a.x -= .18 * sin(a.z * 4. + t * 3.);
-  c = une(c, vec4(ROJO * 1.3, capsula(a, vec3(0, -.05, 0), vec3(0, -.35, 1.1), .14) * .6));
-  c = une(c, vec4(AMBAR * 1.8, esfera(p - vec3(0, .25, -.2), .19)));
-  c = une(c, vec4(vec3(.01), elipse(p - vec3(.04 * sin(t), .25, -.03), vec3(.04, .13, .05))));
-  return c;
+  q.z -= .58;
+  float cil = length(q.yz / vec2(.8, 1.)) * .9;
+  float tapa = max(max(cil - .54, -q.y), abs(q.x) - .92);
+  tapa = max(tapa, -max(cil - .44, abs(q.x) - .82));
+  float tab2 = smoothstep(.06, .0, abs(fract(atan(q.y, q.z) * 2.6) - .5) - .04);
+  c = une(c, vec4(mix(vec3(.6, .31, .12), vec3(.22, .1, .04), tab2), tapa * .65));
+  // herrajes sobre base y tapa
+  float fr = abs(abs(p.x) - .62) - .07;
+  float hb = max(max(fr, caja(p + vec3(0, .45, 0), vec3(.95, .45, .61)) - .02), -caja(p + vec3(0, .1, 0), vec3(.8, .45, .5)));
+  float ht = max(max(abs(abs(q.x) - .62) - .07, max(cil - .565, -q.y)), -(cil - .5));
+  c = une(c, vec4(AMBAR * .95, min(hb, ht) * .7));
+  // encías y dientes: los de abajo en el borde de la base, los de arriba en el de la tapa
+  vec3 e = vec3(p.x - .2 * clamp(round(p.x / .2), -4., 4.), p.y + .0, p.z - .53);
+  c = une(c, vec4(HUESO, cono(e, vec3(0, -.06, 0), vec3(0, .17, -.03), .075, .012) * .7));
+  e = vec3(q.x - .2 * clamp(round(q.x / .2), -4., 4.), q.y, q.z - .47);
+  c = une(c, vec4(HUESO, cono(e, vec3(0, .06, 0), vec3(0, -.17, .02), .075, .012) * .7));
+  // lengua: sale de dentro, pasa sobre el borde y cuelga por delante
+  vec3 l = p; l.x -= .1 * sin(p.z * 3. + t * 2.5) * smoothstep(.3, .9, p.z);
+  float len = curva(l, vec3(0, -.15, -.2), vec3(0, .25, .75), vec3(0, -.5, .82), .15, .09);
+  c = une(c, vec4(ROJO * 1.15, len * .65));
+  // ojos en el fondo oscuro
+  c = une(c, vec4(vec3(.05, .02, .02), caja(p + vec3(0, .12, .05), vec3(.78, .02, .42))));
+  vec3 o = vec3(abs(p.x) - .3, p.y - .08, p.z + .1);
+  return une(c, ojo(o, .2, AMBAR, vec3(0, .05, 1), vec3(.4, .2, .08)));
 }` },
 { id:'espectro', archivo:'espectro.glsl', codigo:
 `// Una capa sin nadie dentro.
@@ -312,13 +427,15 @@ vec4 criatura(vec3 p, float t) {
   d = max(d, max(y - .55, jiron - y));
   // capucha vacía
   d = funde(d, elipse(p - vec3(0, .62, 0), vec3(.42, .5, .42)), .2);
+  vec3 mg = vec3(abs(p.x), p.y - .05 - .1 * sin(t * 1.2 + sign(p.x)), p.z);
+  d = funde(d, cono(mg, vec3(.22, .2, .05), vec3(.5, .06, .42), .17, .13), .15);
   d = max(d, -elipse(p - vec3(0, .6, .36), vec3(.26, .35, .34)));
   float hueco = smoothstep(.03, .0, elipse(p - vec3(0, .6, .36), vec3(.26, .35, .34)));
   vec3 tela = mix(AZUL * .9, vec3(.35, .3, .5), cae);
   vec4 c = vec4(tela * (1. - hueco), d * .6);
   // ojos
   vec3 o = vec3(abs(p.x) - .12, p.y - .62, p.z - .18);
-  c = une(c, vec4(CIAN * (1.7 + .25 * sin(t * 3.)), elipse(o, vec3(.07, .04, .05))));
+  c = une(c, vec4(CIAN * (1.7 + .25 * sin(t * 3.)), elipse(o, vec3(.07, .045 * (1.05 - parpado()), .05))));
   // manos que se adelantan
   float lado = sign(p.x);
   q = vec3(abs(p.x) - .55, p.y - .05 - .1 * sin(t * 1.2 + lado), p.z - .55);
@@ -331,174 +448,274 @@ vec4 criatura(vec3 p, float t) {
 }` },
 // ---------- Mitología ----------
 { id:'hidra', archivo:'hidra.glsl', codigo:
-`// Nueve cabezas, como en el verso de Alceo.
+`// Nueve cabezas; la del centro es la inmortal.
 vec4 criatura(vec3 p, float t) {
-  p.xz *= gira(.25 * sin(t * .3) + .2);
-  p.yz *= gira(-.3);
-  p.y += .3;
-  float d = elipse(p + vec3(0, .85, 0), vec3(.75, .42, .6));
-  vec4 c = vec4(vec3(.2, .5, .35), d * .8);
-
+  p.xz *= gira(.22 * sin(t * .3));
+  p.y += .02;
+  const vec3 H[9] = vec3[9](vec3(0, 1.02, .1), vec3(-.46, .86, 0), vec3(.48, .86, 0), vec3(-.86, .52, -.05), vec3(.9, .5, -.05), vec3(-1.08, .06, .1), vec3(1.0, .04, .25), vec3(-.56, -.02, .5), vec3(.5, .4, .4));
+  // torso con placas y patas
+  float d = elipse(p - vec3(0, -.35, 0), vec3(.36, .48, .32));
+  vec3 q = vec3(abs(p.x), p.yz);
+  d = funde(d, elipse(q - vec3(.36, -.68, .02), vec3(.22, .28, .24)), .1);
+  d = funde(d, cono(q, vec3(.26, -.5, .15), vec3(.34, -.98, .28), .13, .09), .06);
+  // cola que rodea el pedestal
+  vec3 r = p - vec3(.08, -.98, 0);
+  float ac = atan(r.z, r.x);
+  float gr = .06 + .1 * smoothstep(-2.6, 1.4, ac);
+  float cola = length(vec2(length(r.xz * vec2(.82, 1.1)) - .72, r.y)) - gr - .025 * max(0., sin(ac * 26.)) * step(0., r.y);
+  d = min(d, cola * .85);
+  float placa = .012 * sin(p.y * 32.) + .01 * sin(p.x * 30.) * sin(p.y * 26.);
+  vec4 c = vec4(vec3(.3, .62, .3), (d + placa) * .6);
+  // roca
+  r = p + vec3(0, 1.2, 0);
+  c = une(c, vec4(vec3(.16, .15, .13), (elipse(r, vec3(1.0, .16, .65)) + .04 * sin(r.x * 11.) * sin(r.z * 9.)) * .6));
   for (int i = 0; i < 9; i++) {
-    float f = float(i), a = f * .698;
-    // la cabeza central es la inmortal
-    float centro = step(8., f);
-    vec2 sale = vec2(cos(a * 1.125), sin(a * 1.125)) * (1. - centro);
-    float alto = .35 + .4 * sin(f * 3.1) + .75 * centro;
-    vec3 q = p + vec3(0, .7, 0);
-    float h = clamp(q.y / (alto + .7), 0., 1.);
-    q.xz -= sale * (.2 + .95 * h * h + .12 * sin(h * 6. - t * 1.5 + f));
-    q.x -= .12 * h * sin(t + f * 2.);
-    float cuello = capsula(q, vec3(0), vec3(0, alto + .6, 0), .13 - .04 * h);
-    q.y -= alto + .68;
-    vec2 ve = normalize(sale + vec2(0, .8));
-    q.xz = vec2(q.x * ve.y - q.z * ve.x, q.x * ve.x + q.z * ve.y);
-    float cab = elipse(q - vec3(0, 0, .12), vec3(.19, .16, .33));
-    vec3 piel = mix(vec3(.22, .55, .38), AMBAR * 1.25, centro);
-    c = une(c, vec4(piel, funde(cuello, cab, .08) * .5));
-    vec3 o = vec3(abs(q.x) - .14, q.y - .1, q.z - .22);
-    c = une(c, vec4(vec3(1.8, .5, .2), esfera(o, .055) * .7));
+    float f = float(i);
+    vec3 fin = H[i] + .05 * vec3(sin(t * .9 + f * 2.), sin(t * 1.1 + f), sin(t * .8 + f * 3.));
+    vec3 ini = vec3(H[i].x * .18, -.1, .08);
+    vec3 med = vec3(H[i].x * .35, max(H[i].y, .3) * .85 + .28, H[i].z * .3);
+    if (i == 0) med = vec3(.12 * sin(t * .7), .5, -.15);
+    float cue = curva(p, ini, med, fin, .15, .085);
+    cue -= .012 * sin(p.y * 30. + p.x * 18.);
+    // cabeza hacia afuera y abajo; la central mira al frente
+    vec3 k = p - fin;
+    vec2 dir = i == 0 ? vec2(0, 1) : normalize(vec2(sign(H[i].x), .55));
+    k.xz = vec2(k.x * dir.y - k.z * dir.x, k.x * dir.x + k.z * dir.y);
+    k.yz *= gira(-.3); k /= 1.08;
+    float abre = .5 + .5 * sin(t * 1.4 + f * 1.7);
+    float cab = elipse(k, vec3(.105, .1, .13));
+    cab = funde(cab, cono(k, vec3(0, .01, .05), vec3(0, -.0, .26), .075, .045), .04);
+    vec3 j = k + vec3(0, .06, 0); j.yz *= gira(-.15 - .35 * abre);
+    cab = min(cab, cono(j, vec3(0), vec3(0, 0, .22), .05, .025));
+    vec3 o = vec3(abs(k.x), k.yz);
+    float cu = cono(o, vec3(.06, .07, -.04), vec3(.13, .2, -.2), .035, .004);
+    cu = min(cu, cono(o, vec3(.0, .09, -.02), vec3(.0, i == 0 ? .3 : .16, -.12), .035, .004));
+    vec3 piel = mix(vec3(.32, .68, .32), AMBAR * 1.05, i == 0 ? .75 : .12 * sin(f));
+    c = une(c, vec4(piel, funde(cue, min(cab, cu), .03) * .6));
+    c = une(c, ojo(o - vec3(.075, .065, .06), .06, vec3(.95, .35, .05), vec3(.3, .1, .9), piel));
   }
   return c;
 }` },
 { id:'uroboros', archivo:'uroboros.glsl', codigo:
 `// Se come la cola para siempre.
 vec4 criatura(vec3 p, float t) {
-  p.yz *= gira(.35 * sin(t * .4));
-  p.xz *= gira(.5 * sin(t * .3));
-  p.xy *= gira(t * .25);
-  float a = atan(p.y, p.x);            // -pi a pi
-  float f = (a + 3.1416) / 6.2832;     // 0 en la cola, 1 en la cabeza
-  float r = .06 + .19 * smoothstep(0., .45, f) * (1. - .25 * smoothstep(.8, 1., f));
-  vec2 s = vec2(length(p.xy) - 1.05, p.z);
-  // escamas en espiral
+  p.xz *= gira(.5 * sin(t * .4));
+  p.yz *= gira(.18 * sin(t * .3));
+  p.y += .06;
+  float a = atan(p.x, p.y);              // 0 arriba, crece a la derecha
+  float R = .92;
+  vec2 s = vec2(length(p.xy) - R, p.z);
   float v = atan(s.y, s.x);
-  float escama = .02 * sin(a * 40. + v * 3.) * sin(a * 40. - v * 3.);
-  float d = length(s) - r + escama;
-  vec3 piel = mix(vec3(.15, .5, .35), AMBAR * 1.1, smoothstep(-.6, 1., cos(v * 2.) * sin(a * 20.)));
-  vec4 c = vec4(piel, d * .5);
-  // cabeza mordiendo la cola
-  vec3 q = p - vec3(-1.05, .02, 0);
-  float cab = elipse(q, vec3(.27, .36, .25));
-  cab = max(cab, -elipse(q + vec3(0, .33, 0), vec3(.16, .26, .4)));
-  c = une(c, vec4(vec3(.25, .6, .38), cab * .7));
-  vec3 o = vec3(abs(q.x) - .17, q.y - .06, abs(q.z) - .17);
-  c = une(c, vec4(AMBAR * 2., esfera(o, .06)));
-  vec3 n = vec3(abs(q.x) - .16, q.y + .24, abs(q.z) - .06);
-  return une(c, vec4(HUESO, elipse(n, vec3(.03, .12, .03)) * .7));
+  // grosor: la cola (a la derecha de la cabeza) se afina
+  float f = fract(a / 6.2832);           // 0 en la boca, 1 tras la cabeza
+  float r = .11 + .09 * smoothstep(0., .35, f);
+  // placas torcidas, facetadas
+  float pl = fract(a * 7.96 + v * .6);
+  float d = length(s) - r - .022 * (1. - pl);
+  // espinas en la cola
+  d -= .05 * max(0., sin(a * 22.)) * smoothstep(.22, .05, f) * smoothstep(.9, .0, abs(v));
+  vec3 piedra = mix(vec3(.16, .42, .5), vec3(.3, .68, .7), pl);
+  // banda de runas
+  float banda = smoothstep(.16, .12, abs(v - 1.25));
+  vec2 id = vec2(floor(a * 10.), floor(v * 14.)), sub = fract(vec2(a * 30., v * 14.));
+  float runa = step(.45, fract(sin(dot(vec2(floor(a * 30.), id.y), vec2(12.9, 78.2))) * 43758.));
+  float turno = .65 + .35 * sin(a * 3. - t * 2.);
+  vec3 luz = fract(id.x * .37) > .5 ? CIAN : AMBAR;
+  piedra = mix(piedra, vec3(.05, .08, .1), banda);
+  piedra = mix(piedra, luz * (1. + .9 * turno), banda * runa);
+  vec4 c = vec4(piedra, d * .55);
+  // cabeza de dragón arriba, mordiendo hacia la derecha
+  vec3 k = p - vec3(-.1, R + .03, .0);
+  k.xy *= gira(.1); k /= 1.15;
+  float ab = .12 + .08 * sin(t * 1.3);
+  float cab = elipse(k, vec3(.28, .2, .22));
+  cab = funde(cab, cono(k, vec3(.12, .06, 0), vec3(.42, .07, 0), .15, .09), .07);
+  vec3 j = k - vec3(.02, -.12, 0); j.xy *= gira(ab);
+  cab = funde(cab, cono(j, vec3(0), vec3(.34, 0, 0), .1, .06), .05);
+  vec3 u = vec3(k.xy, abs(k.z));
+  cab = funde(cab, elipse(u - vec3(.14, .16, .12), vec3(.15, .05, .07)), .04);
+  float cu = curva(u, vec3(-.08, .12, .12), vec3(-.4, .2, .22), vec3(-.48, .46, .2), .065, .01);
+  cu = min(cu, cono(u, vec3(-.16, .0, .18), vec3(-.46, -.02, .3), .05, .008));
+  cu = min(cu, cono(u, vec3(-.12, -.1, .16), vec3(-.36, -.2, .26), .045, .008));
+  cu = min(cu, cono(u, vec3(.36, .13, .03), vec3(.4, .27, .05), .035, .006));
+  cab += .012 * sin(k.x * 30.) * sin(k.y * 28.);
+  c = une(c, vec4(vec3(.28, .66, .68), min(cab, cu) * .65));
+  c = une(c, ojo(u - vec3(.12, .1, .16), .1, vec3(.1, .7, .9), vec3(.3, 0, 1), vec3(.25, .6, .62)));
+  vec3 n = vec3(k.x - .3 - .09 * clamp(round((k.x - .3) / .09), -1., 1.), k.y + .0, abs(k.z) - .09);
+  return une(c, vec4(HUESO * 1.1, cono(n, vec3(0, .02, 0), vec3(0, -.09, 0), .03, .004)));
 }` },
 { id:'fenix', archivo:'fenix.glsl', codigo:
-`// Roja y dorada, del tamaño de un águila.
+`// Plumas por capas, cintas en la cola y fuego a los pies.
 vec4 criatura(vec3 p, float t) {
-  p.y -= .15 + .1 * sin(t * 2. + 1.5);
-  p.xz *= gira(.3 * sin(t * .4));
-  // cuerpo, cuello y cabeza
-  float d = elipse(p, vec3(.26, .46, .28));
-  d = funde(d, capsula(p, vec3(0, .35, .05), vec3(0, .75, .12), .1), .15);
-  d = funde(d, esfera(p - vec3(0, .82, .14), .16), .08);
-  vec4 c = vec4(mix(ROJO * 1.4, AMBAR * 1.3, smoothstep(-.3, .8, p.y)), d * .7);
-  c = une(c, vec4(HUESO, elipse(p - vec3(0, .78, .32), vec3(.05, .05, .13)) * .7));
+  p.y -= .12 + .04 * sin(t * 2. + 1.5);
+  p.xz *= gira(.22 * sin(t * .4));
   vec3 q = vec3(abs(p.x), p.yz);
-  c = une(c, vec4(vec3(.01), esfera(q - vec3(.09, .86, .25), .04)));
-  // cresta
-  c = une(c, vec4(AMBAR * 1.8, capsula(q, vec3(.02, .95, .1), vec3(.14, 1.25, -.05), .03)));
-
-  // alas: plumas en abanico
-  float bate = .35 * sin(t * 2.);
-  vec3 w = q - vec3(.18, .2, 0);
-  w.xy *= gira(bate + .1);
-  for (int i = 0; i < 7; i++) {
-    float f = float(i) / 6.;
-    vec3 s = w - vec3(.1 + f * .25, 0, -.03 * f);
-    s.xy *= gira(1.15 - f * 1.75);
-    float largo = .5 + .3 * sin(f * 2.6);
-    vec3 tono = mix(ROJO * 1.5, vec3(1.6, 1., .35), smoothstep(0., largo * 1.8, s.x));
-    c = une(c, vec4(tono, elipse(s - vec3(largo, 0, 0), vec3(largo, .11, .05)) * .55));
+  // cuerpo y cuello
+  float d = elipse(p - vec3(0, -.02, 0), vec3(.21, .42, .22));
+  d = funde(d, cono(p, vec3(0, .25, .04), vec3(0, .56, .1), .15, .11), .1);
+  d = funde(d, elipse(p - vec3(0, .63, .12), vec3(.18, .17, .17)), .05);
+  // pecho en escamas con forma de V
+  float uve = sin((p.y + q.x * .9) * 34.);
+  vec3 pecho = mix(vec3(.75, .12, .08), AMBAR * 1.35, smoothstep(.1, .8, uve) * smoothstep(-.3, .25, p.y) * step(0., p.z));
+  vec4 c = vec4(pecho, (d - .012 * uve) * .65);
+  c = une(c, vec4(vec3(.5, .4, .35), cono(p, vec3(0, .58, .26), vec3(0, .5, .4), .06, .015)));
+  c = une(c, ojo(q - vec3(.085, .66, .22), .085, vec3(.85, .3, .05), vec3(.05, 0, 1), vec3(1., .5, .15)));
+  // corona de llamas
+  for (int i = 0; i < 3; i++) {
+    float f = float(i);
+    vec3 s = q - vec3(.07 * f, .76 - .03 * f, .06);
+    s.xy *= gira(.32 * f);
+    c = une(c, vec4(mix(vec3(1.7, .9, .25), vec3(1.4, .3, .1), f * .4), elipse(s - vec3(0, .1, 0), vec3(.045, .16 - .02 * f, .05)) * .7));
   }
-  // cola: tres llamas que ondean
-  q = p + vec3(0, .35, .1);
-  q.x += .13 * sin(q.y * 4. + t * 3.) * smoothstep(0., -.8, q.y);
-  float n = clamp(round(q.x / .2), -1., 1.);
-  q.x -= n * .2 + n * -.18 * q.y;
-  float largo = 1.15 - .2 * abs(n);
-  c = une(c, vec4(mix(vec3(1.7, 1.1, .4), ROJO * 1.6, smoothstep(0., -1.2, q.y)),
-                  elipse(q + vec3(0, largo * .5, 0), vec3(.1, largo * .55, .06)) * .5));
-  return c;
+  // alas alzadas
+  vec3 w = q - vec3(.17, .2, -.02);
+  w.xy *= gira(.16 * sin(t * 2.));
+  w.z += .12 * w.x;
+  // primarias
+  for (int i = 0; i < 9; i++) {
+    float f = float(i) / 8.;
+    float u = 1. - f * .92;
+    vec3 s = w - vec3(mix(mix(vec2(0), vec2(.35, .1), u), mix(vec2(.35, .1), vec2(.62, .42), u), u), -.02 * f);
+    s.xy *= gira(-(.85 - f * 2.));
+    float L = .4 - .12 * f;
+    float punta = smoothstep(.2, 1.9 * L, s.x);
+    c = une(c, vec4(mix(vec3(.72, .08, .08), vec3(1.6, .8, .22), punta * punta), elipse(s - vec3(L, 0, 0), vec3(L, .075, .035)) * .55));
+  }
+  // cobertoras, por delante
+  for (int i = 0; i < 6; i++) {
+    float f = float(i) / 5.;
+    float u = .95 - f * .85;
+    vec3 s = w - vec3(mix(mix(vec2(0), vec2(.35, .1), u), mix(vec2(.35, .1), vec2(.62, .42), u), u), .05);
+    s.xy *= gira(-(.6 - f * 1.8));
+    float punta = smoothstep(.1, .42, s.x);
+    c = une(c, vec4(mix(vec3(.85, .16, .08), vec3(1.5, .95, .3), punta), elipse(s - vec3(.2, 0, 0), vec3(.24, .075, .04)) * .6));
+  }
+  c = une(c, vec4(vec3(1., .3, .12), curva(w, vec3(0, 0, .05), vec3(.35, .1, .05), vec3(.62, .42, .0), .085, .03) * .7));
+  // patas
+  c = une(c, vec4(AMBAR * 1.1, cono(q, vec3(.08, -.36, .08), vec3(.1, -.58, .14), .05, .03)));
+  // abanico de la cola
+  for (int i = 0; i < 4; i++) {
+    float f = float(i);
+    vec3 s = q - vec3(.04, -.3, -.1);
+    s.xy *= gira(-(.12 + .24 * f) + .04 * sin(t * 2. + f));
+    c = une(c, vec4(mix(vec3(1., .2, .08), vec3(.5, .05, .07), smoothstep(-.2, -.8, s.y)), elipse(s + vec3(0, .36, 0), vec3(.075, .4, .04)) * .6));
+  }
+  // cintas que se rizan
+  float o = .05 * sin(t * 1.6);
+  float ci = curva(q, vec3(.1, -.4, -.05), vec3(1., -.2 + o, 0), vec3(.82, -.85, .05), .045, .03);
+  ci = min(ci, curva(q, vec3(.82, -.85, .05), vec3(.75, -1.1, .05), vec3(.4, -.98 + o, .1), .03, .02));
+  ci = min(ci, curva(q, vec3(.1, -.45, 0), vec3(.55, -1.05, .1), vec3(1.08, -.55 - o, .1), .04, .02));
+  c = une(c, vec4(vec3(1., .16, .1), ci * .65));
+  vec3 ti = q - vec3(1.1, -.5 - o, .1); ti.xy *= gira(.45);
+  c = une(c, vec4(vec3(1.7, .8, .2), elipse(ti, vec3(.055, .14, .04)) * .6));
+  ti = q - vec3(.36, -.97 + o, .1);
+  c = une(c, vec4(vec3(1.7, .8, .2), elipse(ti, vec3(.13, .05, .04)) * .6));
+  // hoguera
+  vec3 h = p + vec3(.05 * sin(p.y * 8. - t * 6.), .86, 0);
+  float fu = elipse(h, vec3(.17 - .14 * h.y, .38, .13)) + .05 * sin(h.x * 16.) * sin(h.y * 7. - t * 7.);
+  return une(c, vec4(mix(vec3(1.8, 1.1, .4), vec3(1.5, .4, .1), smoothstep(-.2, .3, h.y)), fu * .5));
 }` },
 { id:'kraken', archivo:'kraken.glsl', codigo:
 `// Más isla que pez.
 vec4 criatura(vec3 p, float t) {
-  p.y += .25;
   p.xz *= gira(.2 * sin(t * .3));
-  // manto
-  vec3 k = p - vec3(0, .1, 0);
-  k.x += .08 * sin(t * .8) * k.y;
-  float d = elipse(k - vec3(0, .35, 0), vec3(.48, .85, .45));
-  d += .02 * sin(k.x * 14.) * sin(k.y * 12.);
-  vec4 c = vec4(mix(ROJO * .9, vec3(.5, .2, .4), smoothstep(0., 1., k.y)), d * .6);
-  // ojos
-  vec3 o = vec3(abs(k.x) - .32, k.y + .12, k.z - .3);
-  c = une(c, vec4(AMBAR * 1.8, esfera(o, .13)));
-  c = une(c, vec4(vec3(.01), elipse(o - vec3(.02, 0, .1), vec3(.1, .03, .06))));
-
-  // ocho brazos que salen del agua y se curvan
-  float n = gajo(p, 8.);
-  vec3 q = ronda(p, 8.);
-  float alto = 1.1 + .4 * sin(n * 2.3);
-  float h = clamp((q.y + .9) / (alto + .9), 0., 1.);
-  q.x -= .75 + .45 * sin(h * 3. + .5 * sin(t + n * 1.7)) - .35 * h;
-  q.z -= .16 * h * sin(h * 5. - t * 1.6 + n);
-  float brazo = capsula(q, vec3(0, -1., 0), vec3(0, alto - .4, 0), .19 - .13 * h);
-  // ventosas
-  vec3 v = q; v.x += .14 - .1 * h; v.y -= .15 * round(v.y / .15);
-  float vent = esfera(v, .07 - .04 * h) + step(alto - .4, q.y);
-  c = une(c, vec4(ROJO * 1.1, brazo * .45));
-  c = une(c, vec4(HUESO * .9, vent * .45));
-
-  // mar
-  float mar = p.y + .85 + .05 * sin(p.x * 4. + t * 1.5) * sin(p.z * 4. + t);
-  mar = max(mar, length(p * vec3(1, 1.2, 1)) - 1.65);
-  return une(c, vec4(AZUL * .7, mar * .6));
+  p.y -= .04 * sin(t * .8) + .05;
+  // manto inclinado y cabeza
+  vec3 m = p - vec3(-.46, .6, 0); m.xy *= gira(.75);
+  float d = elipse(m, vec3(.43, .56, .42));
+  d = funde(d, elipse(p - vec3(-.02, .12, .02), vec3(.3, .3, .28)), .2);
+  // arrugas sobre la piel
+  d += .012 * sin(m.x * 12. + 2. * sin(m.y * 7.));
+  // cejas
+  vec3 o = vec3(p.x + .02, p.y - .16, abs(p.z) - .2);
+  d = funde(d, elipse(o - vec3(.02, .08, .04), vec3(.17, .06, .09)), .05);
+  const vec3 C[8] = vec3[8](vec3(-.75, -.95, .1), vec3(-.65, -.5, .3), vec3(.1, -.95, .3), vec3(.62, -.3, .25), vec3(.95, -.35, 0), vec3(.45, -.25, -.35), vec3(-.75, -.35, .45), vec3(.75, -.95, -.1));
+  const vec3 E[8] = vec3[8](vec3(-1.18, -.3, .0), vec3(-.42, -1.02, .3), vec3(.3, -.72, .4), vec3(1.12, -.55, .3), vec3(1.02, .5, .0), vec3(.58, .28, -.35), vec3(-.5, .02, .55), vec3(.85, -.98, -.2));
+  float vent = 0.;
+  for (int i = 0; i < 8; i++) {
+    float f = float(i);
+    vec3 e = E[i] + .07 * vec3(sin(t * .8 + f * 1.3), cos(t * .7 + f * 2.1), 0);
+    vec3 ini = vec3(.22 * cos(f * .8 + 2.4), -.08, .18 * sin(f * .8));
+    float br = curva(p, ini, C[i], e, .15, .06);
+    // rizo en la punta
+    vec2 tg = normalize(e.xy - C[i].xy);
+    float s = i == 3 || i == 4 || i == 7 ? -1. : 1.;
+    float R = .15;
+    vec3 r = p - vec3(e.xy + vec2(-tg.y, tg.x) * s * R, e.z);
+    float an = atan(dot(r.xy, vec2(-tg.y, tg.x)) * s, dot(r.xy, tg));
+    float g = fract((an + 1.5708) / 6.2832);
+    float rizo = length(vec2(length(r.xy) - R * (1. - .42 * g), r.z)) - .06 * (1. - .72 * g);
+    br = min(br, rizo * .7);
+    d = funde(d, br, .07);
+  }
+  vec3 piel = mix(vec3(.3, .26, .5), vec3(.46, .6, .85), smoothstep(-.7, 1., p.y));
+  // ventosas claras por debajo de los brazos
+  float punto = smoothstep(.5, .9, sin(p.x * 34.) * sin(p.y * 34.));
+  piel = mix(piel, vec3(.8, .75, .72), punto * smoothstep(-.02, -.25, p.y) * .8);
+  float vena = smoothstep(.12, .0, abs(sin(m.x * 5. + 2.5 * sin(m.y * 4.)))) * step(.15, p.y);
+  piel = mix(piel, CIAN * 1.1, vena * .35);
+  vec4 c = vec4(piel, d * .55);
+  c = une(c, ojo(o - vec3(.04, -.02, .07), .17, AMBAR, vec3(.2, -.05, 1), vec3(.45, .35, .8)));
+  return c;
 }` },
 { id:'quetzal', archivo:'quetzalcoatl.glsl', codigo:
-`// Plumas de quetzal, cuerpo de serpiente.
+`// Un infinito de plumas.
 vec4 criatura(vec3 p, float t) {
-  p.xz *= gira(.3 * sin(t * .35));
-  vec3 q = p;
-  // el cuerpo ondula en el aire
-  float h = smoothstep(-1.3, 1., p.y);
-  vec2 onda = vec2(.6 * sin(p.y * 2.6 + t), .35 * cos(p.y * 2.6 + t)) * (1.15 - .75 * h);
-  q.xz -= onda;
-  float r = .06 + .18 * h;
-  vec3 b = q;
-  float d = capsula(b, vec3(0, -1.35, 0), vec3(0, .7, 0), .05) - r + .05;
-  float ang = atan(q.z, q.x);
-  float anillo = smoothstep(.1, .4, sin(p.y * 18. + cos(ang * 3.)));
-  vec4 c = vec4(mix(vec3(.1, .65, .45), AMBAR, anillo * .7), d * .45);
-  // plumas a lo largo del lomo
-  float paso = .16;
-  vec3 f = q; float n = clamp(round(f.y / paso), -7., 4.);
-  f.y -= n * paso;
-  f.x = abs(f.x) - r - .12;
-  f.xy *= gira(.6 + .2 * sin(t * 3. + n));
-  c = une(c, vec4(mix(CIAN * 1.25, vec3(.1, .9, .35), .5 + .5 * sin(n * 2.)),
-                  elipse(f, vec3(.22, .06, .08)) * .4));
-  // cabeza
-  float cx = .6 * sin(.85 * 2.6 + t) * .4, cz = .35 * cos(.85 * 2.6 + t) * .4;
-  vec3 k = p - vec3(cx, .85, cz);
-  float cab = funde(elipse(k, vec3(.36, .3, .34)), elipse(k - vec3(0, -.08, .4), vec3(.25, .18, .34)), .12);
-  c = une(c, vec4(vec3(.15, .7, .5), cab * .7));
-  vec3 o = vec3(abs(k.x) - .25, k.y - .13, k.z - .24);
-  c = une(c, vec4(AMBAR * 1.9, esfera(o, .1)));
-  o = vec3(abs(k.x) - .1, k.y + .27, k.z - .62);
-  c = une(c, vec4(HUESO, elipse(o, vec3(.03, .11, .03)) * .7));
-  // corona de plumas
-  for (int i = 0; i < 7; i++) {
-    float g = (float(i) - 3.) * .42;
-    vec3 s = k + vec3(0, 0, .2);
-    s.xy *= gira(g + .06 * sin(t * 2. + g));
-    vec3 tono = mix(ROJO * 1.5, CIAN * 1.4, smoothstep(.2, .7, s.y));
-    c = une(c, vec4(tono, elipse(s - vec3(0, .48, 0), vec3(.09, .36, .05)) * .6));
+  p.xz *= gira(.25 * sin(t * .35));
+  p.y -= .04 * sin(t) - .03;
+  // cuerpo: un ocho tendido, con cuello arriba y cola abajo
+  float d = 9., u = 0.;
+  vec3 ant = vec3(.0, -.2, .24);
+  for (int i = 1; i <= 18; i++) {
+    float f = float(i) / 18., w = f * 6.2832;
+    vec3 sig = vec3(.86 * sin(w), -.2 + .36 * sin(w * 2.) + .03 * sin(t * 1.5 + w * 2.), .24 * cos(w));
+    vec3 pa = p - ant, ba = sig - ant;
+    float h = clamp(dot(pa, ba) / dot(ba, ba), 0., 1.);
+    float e = length(pa - ba * h) - .165;
+    if (e < d) { d = e; u = (float(i) - 1. + h) / 18. * 9.; }
+    ant = sig;
+  }
+  float cue = curva(p, vec3(0, -.2, .24), vec3(.72, .42, .1), vec3(-.04, .72, .16), .17, .16);
+  if (cue < d) { u = p.y * 2.5 + 20.; }
+  d = funde(d, cue, .06);
+  // plumas imbricadas
+  float pl = sin(u * 16. + 2. * sin(p.x * 13. + p.y * 9.) + p.z * 12.);
+  float capa = sin(p.x * 25. + p.y * 19. + u * 4.);
+  d -= .03 * pl * capa;
+  vec3 tono = mix(vec3(.05, .5, .34), CIAN * .9, smoothstep(-.3, .9, pl));
+  tono = mix(tono, vec3(.1, .3, .85), smoothstep(.55, 1., capa) * .6);
+  tono = mix(tono, AMBAR * 1.1, smoothstep(.75, 1., pl * capa));
+  vec4 c = vec4(tono, d * .5);
+  // cola escamada con cascabel
+  float co = curva(p, vec3(-.05, -.3, .2), vec3(-.62, -1.2, .2), vec3(.18, -1.12, .22), .12, .05);
+  co += .01 * sin(p.x * 40.) * sin(p.y * 40.);
+  c = une(c, vec4(mix(vec3(.12, .5, .4), AMBAR, step(.6, sin(p.x * 22. + p.y * 8.))), co * .6));
+  c = une(c, vec4(AMBAR * 1.3, min(esfera(p - vec3(.25, -1.1, .22), .07), esfera(p - vec3(.34, -1.05, .22), .06))));
+  // cabeza: máscara de perfil, mirando a la izquierda
+  vec3 k = p - vec3(-.12, .74, .24);
+  k.xz *= gira(.5); k /= 1.12;
+  float ab = .5 + .5 * sin(t * 1.2);
+  float cab = elipse(k, vec3(.2, .18, .17));
+  cab = funde(cab, cono(k, vec3(-.05, .0, 0), vec3(-.36, -.03, 0), .15, .085), .06);
+  vec3 j = k - vec3(-.02, -.12, 0); j.xy *= gira(-.12 - .25 * ab);
+  cab = min(cab, cono(j, vec3(.04, .02, 0), vec3(-.3, 0, 0), .09, .045));
+  float gre = step(.5, fract(k.x * 9.)) * step(abs(k.y - .08), .025);
+  c = une(c, vec4(mix(vec3(.25, .6, .48), AMBAR * 1.2, gre), cab * .7));
+  vec3 z = vec3(k.x + .08, k.y - .07, abs(k.z) - .14);
+  c = une(c, ojo(z, .085, AMBAR, vec3(-.4, .05, 1), vec3(.2, .6, .45)));
+  z = vec3(k.x + .12 - .08 * clamp(round((k.x + .12) / .08), -2., 1.), k.y + .07, abs(k.z) - .08);
+  c = une(c, vec4(HUESO * 1.1, cono(z, vec3(0, .02, 0), vec3(0, -.06, 0), .022, .004)));
+  z = vec3(k.x - .08, k.y + .06, abs(k.z) - .19);
+  
+  // penacho en dos capas
+  for (int i = 0; i < 11; i++) {
+    float g = (float(i) - 5.) * .31 + .12;
+    vec3 s = p - vec3(-.06, .72, .06);
+    s.xy *= gira(g + .03 * sin(t * 2. + g * 3.));
+    vec3 tp = mix(vec3(.08, .65, .45), i % 2 == 0 ? CIAN * 1.15 : vec3(.2, .45, 1.), smoothstep(.2, .5, s.y));
+    tp = mix(tp, AMBAR * 1.2, smoothstep(.025, .0, abs(s.x)) * .6);
+    float L = i % 2 == 0 ? .36 : .29;
+    c = une(c, vec4(tp, elipse(s - vec3(0, L, 0), vec3(.075, L, .04)) * .6));
   }
   return c;
 }` },
@@ -525,7 +742,7 @@ vec4 criatura(vec3 p, float t) {
   b = funde(b, elipse(f, vec3(.2, .06, .45)), .12);
   c = une(c, vec4(vec3(.25, .5, .5), b * .7));
   k.z = abs(k.z) - .24;
-  c = une(c, vec4(AMBAR * 1.9, esfera(k - vec3(.12, .06, 0), .05)));
+  c = une(c, ojo(k - vec3(.12, .08, 0), .115, vec3(.5, .3, .05), vec3(.4, .05, 1), vec3(.28, .55, .52)));
   // palmeras
   for (int i = 0; i < 4; i++) {
     float g = float(i);
@@ -542,37 +759,60 @@ vec4 criatura(vec3 p, float t) {
   return c;
 }` },
 { id:'golem', archivo:'golem.glsl', codigo:
-`// Borra la primera letra y vuelve a ser barro.
+`// Bloques de piedra y una palabra en la frente.
 vec4 criatura(vec3 p, float t) {
   p.xz *= gira(.4 * sin(t * .4));
-  p.y += .1;
-  float paso = sin(t * 1.3);
-  float grumo = .025 * sin(p.x * 13.) * sin(p.y * 11.) * sin(p.z * 12.);
-  // torso y cabeza
-  float d = caja(p - vec3(0, .1, 0), vec3(.48, .42, .26)) - .1;
-  d = funde(d, caja(p + vec3(0, .5, 0), vec3(.3, .2, .2)) - .06, .15);
-  vec3 k = p - vec3(0, .85, .05);
-  k.xz *= gira(.2 * sin(t * .7));
-  d = funde(d, caja(k, vec3(.2, .22, .2)) - .06, .06);
-  // brazos y piernas, alternando
-  float lado = sign(p.x);
+  p.y += .0;
+  float lado = sign(p.x), b = .03 * sin(t * 1.2);
+  p.y -= .03 * abs(sin(t * 1.2));
   vec3 q = vec3(abs(p.x), p.yz);
-  float m = .25 * paso * lado;
-  d = funde(d, capsula(q, vec3(.68, .38, 0), vec3(.88, -.15, m * .5), .18), .12);
-  d = funde(d, capsula(q, vec3(.88, -.15, m * .5), vec3(.86, -.62, m + .1), .2), .06);
-  d = funde(d, capsula(q, vec3(.27, -.65, 0), vec3(.32, -1.25, -m), .2), .1);
-  float grieta = smoothstep(.06, .0, abs(sin(p.x * 4. + sin(p.y * 7.)) * .5 + .1 * sin(p.z * 9.)));
-  vec3 barro = mix(vec3(.42, .28, .18), vec3(1.35, .6, .2), grieta * (.5 + .5 * sin(t * 2.)));
-  vec4 c = vec4(barro, (d + grumo) * .6);
-  // ojos
-  vec3 o = vec3(abs(k.x) - .11, k.y + .02, k.z - .26);
-  c = une(c, vec4(AMBAR * 1.6, caja(o, vec3(.065, .035, .03))));
-  // tres letras en la frente; la primera se apaga a ratos
-  o = k - vec3(0, .17, .27);
-  float n = clamp(round(o.x / .12), -1., 1.);
-  o.x -= n * .12;
-  float viva = n > .5 ? step(-.6, sin(t * .7)) : 1.;
-  c = une(c, vec4(mix(vec3(.3, .2, .1), CIAN * 1.3, viva), caja(o, vec3(.035, .05, .02))));
-  return c;
+  float paso = .1 * sin(t * 1.2) * lado;
+  // pecho partido, cintura y cadera
+  vec3 s = q - vec3(.25, .3 + b, 0); s.xy *= gira(.06);
+  float d = caja(s, vec3(.2, .26, .22)) - .05;
+  d = min(d, caja(p - vec3(0, -.1, 0), vec3(.2, .12, .16)) - .04);
+  d = min(d, caja(p - vec3(0, -.3, 0), vec3(.3, .11, .2)) - .04);
+  // hombros
+  s = q - vec3(.64, .42 + b, 0); s.xy *= gira(.25);
+  d = min(d, caja(s, vec3(.19, .2, .22)) - .05);
+  // brazo, antebrazo y puño
+  s = q - vec3(0, b, paso * smoothstep(.3, -.6, p.y));
+  d = min(d, esfera(s - vec3(.76, .1, 0), .18));
+  vec3 u = s - vec3(.84, -.2, .04); u.xy *= gira(-.1);
+  d = min(d, caja(u, vec3(.17, .22, .18)) - .04);
+  u = s - vec3(.84, -.57, .08);
+  d = min(d, caja(u, vec3(.14, .12, .14)) - .04);
+  d = min(d, caja(u - vec3(-.06, 0, .17), vec3(.1, .035, .04)) - .02);
+  // piernas
+  s = q - vec3(0, 0, -paso * .8);
+  d = min(d, caja(s - vec3(.22, -.54, 0), vec3(.11, .14, .12)) - .03);
+  d = min(d, esfera(s - vec3(.24, -.74, .03), .14));
+  u = s - vec3(.27, -.96, .02);
+  d = min(d, caja(u, vec3(.13 - .08 * u.y, .18, .15)) - .04);
+  // cabeza
+  vec3 k = p - vec3(0, .78 + b, .06);
+  k.xz *= gira(.15 * sin(t * .7));
+  d = min(d, caja(k, vec3(.17, .19, .17)) - .05);
+  d += .012 * sin(p.x * 17.) * sin(p.y * 15. + 2.) * sin(p.z * 16.);
+  float g = grieta(p * 1.3);
+  vec3 piedra = mix(vec3(.6, .44, .29), vec3(.3, .14, .08), g * .85);
+  float tabl = step(abs(k.x), .19) * step(abs(k.y - .03), .125) * step(.19, k.z);
+  piedra = mix(piedra, vec3(.1, .06, .04), tabl);
+  vec4 c = vec4(piedra, d * .7);
+  // emet, de derecha a izquierda; la álef se apaga a ratos
+  vec2 e = k.xy - vec2(0, .03);
+  float L = 9.;
+  float viva = step(-.6, sin(t * .7));
+  vec2 a = e - vec2(.12, 0);
+  float al = min(trazo(a, vec2(-.05, .08), vec2(.05, -.08)), min(trazo(a, vec2(.05, .08), vec2(.015, .0)), trazo(a, vec2(-.05, -.08), vec2(-.02, .02))));
+  a = e;
+  float me = min(min(trazo(a, vec2(-.04, .08), vec2(.04, .07)), trazo(a, vec2(.04, .07), vec2(.045, -.08))), min(trazo(a, vec2(.045, -.08), vec2(.0, -.08)), trazo(a, vec2(-.04, .08), vec2(-.05, -.08))));
+  a = e + vec2(.12, 0);
+  float ta = min(min(trazo(a, vec2(-.05, .07), vec2(.045, .07)), trazo(a, vec2(.045, .07), vec2(.045, -.08))), trazo(a, vec2(-.025, .07), vec2(-.05, -.08)));
+  L = min(viva > .5 ? al : 9., min(me, ta));
+  float placa = max(abs(k.z - .225) - .012, L - .014);
+  c = une(c, vec4(vec3(1.6, .85, .25), placa * .7));
+  u = vec3(abs(k.x) - .09, k.y + .13, k.z - .22);
+  return une(c, vec4(AMBAR * 1.7, caja(u, vec3(.055, .045 * (1.02 - parpado()), .015)) - .01));
 }` }
 );
