@@ -3,22 +3,30 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Generador | Mundo en caracteres</title>
+<link rel="icon" href="icono.svg" type="image/svg+xml"><link rel="icon" href="icono-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="icono-180.png"><meta name="theme-color" content="#01040c">
 <meta name="description" content="Convierte imágenes y modelos 3D en arte ASCII animado. Todo ocurre en tu navegador: nada se sube a ningún sitio.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wdth,wght@75..100,300..800&family=Martian+Mono:wght@300..600&display=swap">
-<link rel="stylesheet" href="generador.css?v=28"></head>
+<link rel="stylesheet" href="generador.css?v=33"></head>
 <body>
 <header><a href="index.html" class="marca">Mundo en caracteres</a><nav aria-label="Secciones"><a href="index.html#indice">Galería</a><span aria-current="page">Generador</span></nav></header>
 <main>
  <section id="escena" aria-label="Dibujo">
   <canvas id="lienzo" tabindex="0" aria-label="Dibujo ASCII. Con la vista desbloqueada, arrastra para girarlo y tócalo para que reaccione."></canvas>
   <div id="soltar" hidden><p>Suelta aquí la imagen o el modelo</p></div>
-  <div id="pincel" hidden role="dialog" aria-label="Marcar el objeto">
+  <div id="pincel" class="editor" hidden role="dialog" aria-label="Marcar el objeto">
    <p>Pinta encima del objeto. No hace falta cubrirlo entero: el contorno se ajusta solo.</p>
    <canvas></canvas>
    <div class="fila"><button type="button" id="pObjeto">Es objeto</button><button type="button" id="pFondo">Es fondo</button><button type="button" id="pAuto">Automático</button><button type="button" id="pNo">Cancelar</button><button type="button" id="pSi" class="lleno">Listo</button></div>
   </div>
-  <div id="barraEscena" role="toolbar" aria-label="Vista"><button type="button" id="candado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11h14v9H5zM8 11V7a4 4 0 0 1 8 0v4"/></svg></button><button type="button" id="deshacer" aria-label="Deshacer (Ctrl+Z)" title="Deshacer (Ctrl+Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5 3 10l5 5M3 10h11a6 6 0 0 1 0 12h-3"/></svg></button><button type="button" id="rehacer" aria-label="Rehacer (Ctrl+Y)" title="Rehacer (Ctrl+Y)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 5 5 5-5 5M21 10H10a6 6 0 0 0 0 12h3"/></svg></button><button type="button" id="pausa" aria-label="Pausar" title="Pausar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></button><button type="button" id="centrar" aria-label="Centrar la vista" title="Centrar la vista"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></svg></button></div>
+  <div id="barraEscena" role="toolbar" aria-label="Vista"><button type="button" id="candado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11h14v9H5zM8 11V7a4 4 0 0 1 8 0v4"/></svg></button><button type="button" id="deshacer" aria-label="Deshacer (Ctrl+Z)" title="Deshacer (Ctrl+Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5 3 10l5 5M3 10h11a6 6 0 0 1 0 12h-3"/></svg></button><button type="button" id="rehacer" aria-label="Rehacer (Ctrl+Y)" title="Rehacer (Ctrl+Y)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 5 5 5-5 5M21 10H10a6 6 0 0 0 0 12h3"/></svg></button><button type="button" id="borrar" aria-label="Borrar partes de la imagen" title="Borrar partes de la imagen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 15 9-10 7 6-8 9H8zM9 10l7 6M12 20h8"/></svg></button><button type="button" id="pausa" aria-label="Pausar" title="Pausar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></button><button type="button" id="centrar" aria-label="Centrar la vista" title="Centrar la vista"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></svg></button></div>
+  <div id="goma" class="editor" hidden role="dialog" aria-label="Borrar partes de la imagen">
+   <div class="fila"><div class="dos" role="group" aria-label="Acción"><button type="button" data-accion="borra">Borrar</button><button type="button" data-accion="recupera">Recuperar</button></div><div class="dos tres" role="group" aria-label="Herramienta"><button type="button" data-util="pincel">Pincel</button><button type="button" data-util="lazo">Lazo</button><button type="button" data-util="varita">Varita</button></div></div>
+   <canvas></canvas>
+   <label class="tam"><span id="gTam"></span><input type="range" id="gRango" min="2" max="60" value="16"></label>
+   <p class="nota" id="gAyuda"></p>
+   <div class="fila"><button type="button" id="gAtras">Deshacer</button><button type="button" id="gTodo">Recuperar todo</button><button type="button" id="gNo">Cancelar</button><button type="button" id="gSi" class="lleno">Listo</button></div>
+  </div>
   <p id="etiqueta"></p>
   <div id="aviso" role="status"></div>
  </section>
@@ -59,6 +67,7 @@
    <div role="tabpanel" id="p-ajuste" aria-labelledby="t-ajuste" hidden>
     <h2>Forma</h2><div id="dForma"></div>
     <label class="check" id="cSinFondo"><input type="checkbox" id="sinFondo"> Quitar el fondo de la imagen</label>
+    <button type="button" id="borrar2">Borrar partes de la imagen</button>
     <h2>Luz y color</h2><div id="dLuz"></div>
     <label class="check"><input type="checkbox" id="invertir"> Invertir luces</label>
     <button type="button" id="ajusteBase">Restablecer estos ajustes</button>
@@ -94,5 +103,5 @@
  <p id="dTxt" class="nota" role="status"></p>
  <div class="fila"><button type="button" class="lleno" id="dGuardar">Guardar archivo</button><button type="button" id="dComp">Compartir</button><button type="button" id="dCopia">Copiar texto</button><button type="button" id="dVolver"></button></div>
 </dialog>
-<script src="motor.js?v=28"></script><script src="modelos.js?v=28"></script><script src="objeto.js?v=28"></script><script src="generador.js?v=28"></script>
+<script src="motor.js?v=33"></script><script src="modelos.js?v=33"></script><script src="objeto.js?v=33"></script><script src="generador.js?v=33"></script>
 </body></html>

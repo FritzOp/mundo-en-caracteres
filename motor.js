@@ -5,10 +5,10 @@ class MotorAscii {
   static COLORES = { original: 0, ambar: 1, abismo: 2, fosforo: 3, papel: 4, brasa: 5, neon: 6, propio: 7 };
   // animaciones: las de forma mueven la figura; las de ambiente llueven sobre el dibujo
   static ANIM = ['respira', 'viento', 'nado', 'aleteo', 'flota', 'vibra', 'latido', 'giro', 'olas', 'camina', 'lluvia', 'nieve', 'chispas', 'estrellas', 'niebla', 'codigo', 'escaneo'];
-  static BASE = { columnas: 150, rampa: 'clasica', propia: ' .oO@', color: 'original', tinte: '#ffb14a', fondo: '#01040c', luz: 1, atras: 1, brillo: 0, contraste: 0, saturacion: 0, invertir: false, resplandor: 0.5, relieve: 0.35, sinFondo: false, mueve: 'objeto', zoom: 1, giroX: 0, giroY: 0, anim: [], fuerza: 1, velocidad: 1, contexto: true };
+  static BASE = { columnas: 150, rampa: 'clasica', propia: ' .oO@', color: 'original', tinte: '#ffb14a', fondo: '#01040c', luz: 1, atras: 1, nitidez: .5, brillo: 0, contraste: 0, saturacion: 0, invertir: false, resplandor: 0.5, relieve: 0.35, sinFondo: false, mueve: 'objeto', zoom: 1, giroX: 0, giroY: 0, anim: [], fuerza: 1, velocidad: 1, contexto: true };
   static ajustes(x) {
     const b = MotorAscii.BASE, s = {}, n = (k, a, z) => { const v = Number(x && x[k]); s[k] = Number.isFinite(v) ? Math.max(a, Math.min(z, v)) : b[k]; };
-    n('columnas', 40, 260); n('luz', .3, 4); n('atras', 0, 1); n('brillo', -1, 1); n('contraste', -1, 1); n('saturacion', -1, 1); n('resplandor', 0, 1.5); n('relieve', 0, 1); n('zoom', .3, 3); n('giroX', -1.5, 1.5); n('giroY', -50, 50); n('fuerza', 0, 2); n('velocidad', 0, 3);
+    n('columnas', 40, 260); n('luz', .3, 4); n('atras', 0, 1); n('nitidez', 0, 1); n('brillo', -1, 1); n('contraste', -1, 1); n('saturacion', -1, 1); n('resplandor', 0, 1.5); n('relieve', 0, 1); n('zoom', .3, 3); n('giroX', -1.5, 1.5); n('giroY', -50, 50); n('fuerza', 0, 2); n('velocidad', 0, 3);
     const o = (k, l) => { s[k] = x && Object.prototype.hasOwnProperty.call(l, x[k]) ? x[k] : b[k]; };
     o('rampa', { ...MotorAscii.RAMPAS, propia: 1 }); o('color', MotorAscii.COLORES); o('mueve', { objeto: 1, todo: 1 });
     for (const k of ['tinte', 'fondo']) s[k] = x && /^#[0-9a-f]{6}$/i.test(x[k]) ? x[k] : b[k];
@@ -61,11 +61,13 @@ class MotorAscii {
   }
   // imagen: {an, al, prop, capas: [{lienzo, region: bytes RGBA (agua, fuego, planta, cielo), alto, tipo: 0 todo, 1 fondo, 2 objeto, caja, pegado, eje}], marco}
   ponImagen(im) {
-    this._vacia(); this.tipo = 'imagen'; this.prop = im.prop; this.marco = !!im.marco; this.eje = [1, 0, 0];
-    const nx = im.an, ny = im.al, sx = this.prop > 1 ? 1 : this.prop, sy = this.prop > 1 ? 1 / this.prop : 1;
+    this._vacia(); this.tipo = 'imagen'; const E = im.encuadre; this.prop = E ? E[2] / E[3] : im.prop; const pr = im.prop; this.marco = !!im.marco; this.eje = [1, 0, 0];
+    const nx = im.an, ny = im.al, sx = pr > 1 ? 1 : pr, sy = pr > 1 ? 1 / pr : 1;
     for (const c of im.capas) {
       const pos = new Float32Array(nx * ny * 3), uv = new Float32Array(nx * ny * 2), ind = new Uint32Array((nx - 1) * (ny - 1) * 6); let k = 0;
       for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) { const q = j * nx + i; pos.set([(i / (nx - 1) * 2 - 1) * sx, (1 - j / (ny - 1) * 2) * sy, c.alto[q] - .5], q * 3); uv.set([i / (nx - 1), j / (ny - 1)], q * 2); }
+      // figura recortada: se encuadra para que llene la vista
+      if (E) for (let q = 0, s = Math.max(E[2], E[3]); q < nx * ny; q++) { pos[q * 3] = (pos[q * 3] - E[0]) / s; pos[q * 3 + 1] = (pos[q * 3 + 1] - E[1]) / s; }
       for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) { const q = j * nx + i; ind.set([q, q + nx, q + 1, q + 1, q + nx, q + nx + 1], k); k += 6; }
       this._parte({ pos, uv, ind, textura: c.lienzo }); const p = this.partes[this.partes.length - 1]; Object.assign(p, { region: this._tex(null, nx, ny, c.region), capa: c.tipo, caja: c.caja || [0, 0, 1, 1], pegado: c.pegado || [0, 0, 0, 0], eje: c.eje });
     }
@@ -102,7 +104,7 @@ class MotorAscii {
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.capas[0].fb); gl.viewport(0, 0, this.cols * 2, this.filas * 2); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
     const p = this.pFig; gl.useProgram(p.p); const u = p.u, asp = this.lienzo.width / this.lienzo.height, im = this.tipo === 'imagen';
     gl.uniform1fv(u.A, A); gl.uniform1f(u.t, t); gl.uniform1f(u.asp, asp); gl.uniform1f(u.acc, acc); gl.uniform1f(u.tq, Math.max(0, Math.min(9, tq))); gl.uniform1f(u.zoom, S.zoom); gl.uniform2f(u.giro, S.giroX, S.giroY); gl.uniform3fv(u.eje, this.eje); gl.uniform1f(u.imagen, im ? 1 : 0); gl.uniform1f(u.relieve, S.relieve); gl.uniform1f(u.contexto, S.contexto ? S.fuerza : 0); gl.uniform1f(u.prop, this.prop);
-    gl.uniform1f(u.atras, S.atras); gl.uniform1i(u.foto, 0); gl.uniform1i(u.region, 1);
+    gl.uniform1f(u.atras, S.atras); gl.uniform1f(u.nitidez, S.nitidez); gl.uniform1i(u.foto, 0); gl.uniform1i(u.region, 1);
     for (const q of this.partes) { if (this.soloObjeto && q.capa === 1) continue; if (q.capa === 2) gl.clear(gl.DEPTH_BUFFER_BIT); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, q.region || this.negra); gl.activeTexture(gl.TEXTURE0); gl.uniform1f(u.capa, q.capa || 0); gl.uniform4fv(u.caja, q.caja || [0, 0, 1, 1]); gl.uniform4fv(u.pegado, q.pegado || [0, 0, 0, 0]); gl.uniform3fv(u.eje, q.eje || this.eje); gl.bindVertexArray(q.vao); gl.bindTexture(gl.TEXTURE_2D, q.tex); gl.uniform3fv(u.color, q.color); gl.uniform1f(u.hayCol, q.hayCol ? 1 : 0); gl.uniform1f(u.hayUv, q.hayUv ? 1 : 0); if (q.ind) gl.drawElements(gl.TRIANGLES, q.n, gl.UNSIGNED_INT, 0); else gl.drawArrays(gl.TRIANGLES, 0, q.n); }
     gl.bindVertexArray(null); gl.disable(gl.DEPTH_TEST);
     const capa = (pr, fb, w, h) => { gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.viewport(0, 0, w, h); gl.useProgram(pr.p); return pr.u; };
@@ -172,10 +174,10 @@ void main(){
  p.xz*=g(-yaw);n.xz*=g(-yaw);p.yz*=g(pit);n.yz*=g(pit);
  vN=n;vP=p;float z=3.4-p.z;float s=imagen>.5?min(1.,asp/max(prop,.01)*(prop>1.?prop:1.))*(prop>1.?min(asp,prop)*1.:1.):min(1.,asp);
  if(imagen>.5)s=prop>1.?min(asp,prop):min(1.,asp/prop);
- s*=imagen>.5?.94:1.04;gl_Position=vec4(p.x*2.95*s*zoom/asp,p.y*2.95*s*zoom,(z-3.4)*.3*z,z);
+ s*=imagen>.5?1.02:1.04;gl_Position=vec4(p.x*2.95*s*zoom/asp,p.y*2.95*s*zoom,(z-3.4)*.3*z,z);
 }`;
 MotorAscii.F_FIG = `
-in vec3 vN,vC,vP;in vec2 vU;out vec4 o;uniform float A[17],capa,atras;uniform sampler2D foto,region;uniform float t,imagen,contexto,hayUv,acc;
+in vec3 vN,vC,vP;in vec2 vU;out vec4 o;uniform float A[17],capa,atras,nitidez;uniform sampler2D foto,region;uniform float t,imagen,contexto,hayUv,acc;
 float h(vec2 p){return fract(sin(dot(p,vec2(12.98,78.23)))*43758.5);}
 void main(){
  if(imagen>.5){
@@ -183,7 +185,11 @@ void main(){
   u+=c*r.r*vec2(.007*sin(vU.y*70.+t*2.6),.005*cos(vU.x*46.+t*2.));               // agua
   u.x+=c*r.g*.007*sin(vU.y*46.-t*9.);u.y+=c*r.g*.006*sin(vU.x*60.+t*7.);         // fuego
   u.x+=c*r.a*.005*sin(t*.35+vU.y*4.);                                            // cielo
-  vec4 k=texture(foto,u);if(k.a<.45)discard;vec3 q=k.rgb;float l=dot(q,vec3(.3,.59,.11));
+  vec4 k=texture(foto,u);if(k.a<.45)discard;vec3 q=k.rgb;
+  // nitidez: realza el contraste entre celdas vecinas y engrosa las líneas oscuras, que al reducir se pierden
+  if(nitidez>0.){vec2 ex=dFdx(vU),ey=dFdy(vU);vec3 med=vec3(0);float lo=dot(q,vec3(.3,.59,.11)),l0=lo;for(int i=0;i<8;i++){float an=float(i)*.785;vec2 dd=cos(an)*ex+sin(an)*ey;vec4 v=texture(foto,u+dd*2.6),w=texture(foto,u+dd*.9);med+=v.a<.45?q:v.rgb;if(w.a>.45)lo=min(lo,dot(w.rgb,vec3(.3,.59,.11)));}
+   med/=8.;q*=mix(1.,lo/max(l0,.01),.6*nitidez);float dl=dot(q-med,vec3(.3,.59,.11));q=clamp(q*(1.+clamp(dl*1.1*nitidez/max(dot(q,vec3(.3,.59,.11)),.12),-.5,.6)),0.,1.);}
+ float l=dot(q,vec3(.3,.59,.11));
   q*=1.+c*r.g*(.25+.35*sin(t*11.+vU.x*40.)*sin(t*7.+vU.y*30.));
   q+=c*r.r*.35*smoothstep(.55,.9,l)*max(0.,sin(vU.x*90.+t*3.)*sin(vU.y*70.-t*2.));
   q*=1.+c*r.a*.035*sin(vU.x*9.+t*.5+2.*sin(vU.y*7.+t*.3));
@@ -248,7 +254,7 @@ MotorAscii.abre = async (motor, P) => {
   if (P.tipo === 'imagen') {
     const i = P.imagen, an = i.an | 0, al = i.al | 0, n = an * al, capas = [];
     for (const c of i.capas) { const alto = MotorAscii.deTexto(c.alto, 'u8', 255), region = MotorAscii.deTexto(c.region, 'u8'); if (an < 2 || al < 2 || alto.length !== n || region.length !== n * 4) throw Error('Datos dañados'); capas.push({ ...c, lienzo: await MotorAscii.lienzoDe(c.src), alto, region }); }
-    motor.ponImagen({ an, al, prop: i.prop, marco: i.marco, capas });
+    motor.ponImagen({ an, al, prop: i.prop, marco: i.marco, encuadre: Array.isArray(i.encuadre) ? i.encuadre : null, capas });
   }
   else motor.ponModelo(await MotorAscii.modeloDe(P.modelo));
 };

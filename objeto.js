@@ -3,6 +3,7 @@
 const Objeto = {
   // rgb: bytes RGBA de una imagen pequeña. marca: 0 nada, 1 objeto, 2 fondo (trazos del usuario)
   recorta(rgba, W, H, marca) {
+    const liso = Objeto.liso(rgba, W, H, marca); if (liso) return { masc: liso, claro: true, liso: true };
     const N = W * H, lab = Objeto.lab(rgba, N), L = Objeto.suave(lab, W, H, 3), hayMarca = marca && marca.some(v => v === 1);
     const S = Objeto.destaca(L, W, H); let u = Objeto.otsu(S), masc = new Uint8Array(N);
     const firme = new Uint8Array(N); for (let i = 0; i < N; i++) { if (marca && marca[i]) firme[i] = marca[i]; masc[i] = firme[i] ? (firme[i] === 1 ? 1 : 0) : S[i] > u ? 1 : 0; }
@@ -30,6 +31,30 @@ const Objeto = {
     const compacto = caja[2] < 0 ? 0 : area * N / ((caja[2] - caja[0] + 1) * (caja[3] - caja[1] + 1));
     const claro = hayMarca || (area > .008 && area < .62 && borde < .27 && contraste > 11 && sep > 2.4 && compacto > .22 && caja[2] - caja[0] < W * .97);
     return { masc, area, borde, contraste, sep, compacto, caja, claro: !!claro && area > .0005 };
+  },
+  // fondo de un solo color: se borra entrando desde los bordes, así lo blanco de dentro de la figura no se pierde
+  liso(d, W, H, marca) {
+    const N = W * H, bor = []; for (let i = 0; i < W; i++) bor.push(i, (H - 1) * W + i); for (let j = 1; j < H - 1; j++) bor.push(j * W, j * W + W - 1);
+    const med = [0, 1, 2].map(k => { const v = bor.map(i => d[i * 4 + k]).sort((a, b) => a - b); return v[v.length >> 1]; }), T = 18, dist = new Float32Array(N); for (let i = 0; i < N; i++) dist[i] = Math.hypot(d[i * 4] - med[0], d[i * 4 + 1] - med[1], d[i * 4 + 2] - med[2]);
+    if (bor.filter(i => dist[i] < T).length / bor.length < .8) return null;
+    // también vale un degradado suave (luz de estudio, viñeta): color cercano y sin saltos alrededor
+    const salto = new Float32Array(N); for (let i = 0; i < N; i++) { const x = i % W; for (const [q, ok] of [[i + 1, x < W - 1], [i - 1, x > 0], [i + W, i < N - W], [i - W, i >= W]]) if (ok) salto[i] = Math.max(salto[i], Math.hypot(d[i * 4] - d[q * 4], d[i * 4 + 1] - d[q * 4 + 1], d[i * 4 + 2] - d[q * 4 + 2])); }
+    const pasa = i => (dist[i] < T || (dist[i] < 85 && salto[i] < 7)) && !(marca && marca[i] === 1), vec = (q, f) => { const i = q % W; if (i) f(q - 1); if (i < W - 1) f(q + 1); if (q >= W) f(q - W); if (q < N - W) f(q + W); };
+    // paso ancho: no se cuela por huecos finos del contorno
+    const ancho = new Uint8Array(N); for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) { let ok = 1; for (let y = Math.max(0, j - 1); ok && y <= Math.min(H - 1, j + 1); y++) for (let x = Math.max(0, i - 1); x <= Math.min(W - 1, i + 1); x++) if (!pasa(y * W + x)) { ok = 0; break; } ancho[j * W + i] = ok; }
+    const fondo = new Uint8Array(N), entra = (ini, puede) => { const c = ini.filter(i => puede(i) && !fondo[i]); c.forEach(i => fondo[i] = 1); while (c.length) vec(c.pop(), r => { if (!fondo[r] && puede(r)) { fondo[r] = 1; c.push(r); } }); };
+    entra(bor, i => ancho[i] === 1);
+    // y después se ajusta al borde de la figura, un par de pasos
+    for (let v = 0; v < 2; v++) { const n = []; for (let i = 0; i < N; i++) if (!fondo[i] && pasa(i)) { let j = 0; vec(i, r => j += fondo[r]); if (j) n.push(i); } n.forEach(i => fondo[i] = 1); }
+    // bolsillos del mismo color que se abren al fondo por un hueco estrecho (entre las piernas, bajo un brazo)
+    { let fig = 0; for (const v of fondo) fig += 1 - v; const z = Uint8Array.from(fondo, (v, i) => !v && dist[i] < 9 && pasa(i) ? 1 : 0), g = Objeto.grupos(z, 1, W, H), abre = new Set(); for (let i = 0; i < N; i++) if (g.g[i] >= 0) vec(i, r => { if (fondo[r]) abre.add(g.g[i]); }); for (let i = 0; i < N; i++) if (g.g[i] >= 0 && abre.has(g.g[i]) && g.t[g.g[i]].n < fig * .08) fondo[i] = 1; }
+    // el borde suavizado lleva mezclado el color del fondo: se quita para que no deje un halo
+    { const n = []; for (let i = 0; i < N; i++) if (!fondo[i] && dist[i] < 150 && !(marca && marca[i] === 1)) { let j = 0; vec(i, r => j += fondo[r]); if (j) n.push(i); } n.forEach(i => fondo[i] = 1); }
+    if (marca) { const s = []; for (let i = 0; i < N; i++) if (marca[i] === 2) { s.push(i); } entra(s, pasa); s.forEach(i => fondo[i] = 1); }
+    const m = Uint8Array.from(fondo, v => v ? 0 : 1); if (marca) for (let i = 0; i < N; i++) if (marca[i] === 1) m[i] = 1;
+    // fuera motas sueltas
+    const g = Objeto.grupos(m, 1, W, H), mx = Math.max(0, ...g.t.map(q => q.n)); for (let i = 0; i < N; i++) if (g.g[i] >= 0 && g.t[g.g[i]].n < Math.max(4, mx * .01) && !(marca && marca[i] === 1)) m[i] = 0;
+    let area = 0; for (const v of m) area += v; area /= N; return area > .008 && area < .93 ? m : null;
   },
   lab(d, N) {
     const o = new Float32Array(N * 3), g = v => { v /= 255; return v > .04045 ? Math.pow((v + .055) / 1.055, 2.4) : v / 12.92; }, f = v => v > .008856 ? Math.cbrt(v) : 7.787 * v + .138;
