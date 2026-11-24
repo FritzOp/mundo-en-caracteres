@@ -180,7 +180,7 @@ function pintaPanel() {
   marca('[data-a]', b => S.anim.includes(b.dataset.a)); marca('[data-rampa]', b => b.dataset.rampa === S.rampa); marca('[data-color]', b => b.dataset.color === S.color); marca('[data-fondo]', b => b.dataset.fondo === S.fondo.toLowerCase()); marca('#estilos button', b => Object.entries(b.estilo).every(([k, v]) => S[k] === v));
   for (const k of ['propia', 'tinte', 'fondo']) if (document.activeElement !== $('#' + k) || k !== 'propia') $('#' + k).value = S[k]; $('[data-color=propio] .gota').style.background = S.tinte; $('#invertir').checked = S.invertir; $('#sinFondo').checked = S.sinFondo; $('#contextoOn').checked = S.contexto;
   const im = D.tipo === 'imagen', sinObj = !im || !info.hay || info.solo, mv = im && !info.hay ? 'todo' : S.mueve; $('#cSinFondo').hidden = !im || !info.hay || info.hayAlfa; $('#cObjeto').hidden = !im || info.hayAlfa; marca('[data-mueve]', b => b.dataset.mueve === mv); $$('[data-mueve]').forEach(b => b.disabled = sinObj);
-  $('#contextoOn').closest('label').hidden = !im; bRel.hidden = !im; bAtras.hidden = sinObj || S.mueve !== 'objeto'; $('#cPropia').hidden = S.rampa !== 'propia'; $('#fondoBase').disabled = S.fondo.toLowerCase() === b0.fondo; $('#cTinte').hidden = S.color !== 'propio'; barras.forEach(f => f());
+  $('#contextoOn').closest('label').hidden = !im; bRel.hidden = !im; bAtras.hidden = sinObj || S.mueve !== 'objeto'; $('#cPropia').hidden = S.rampa !== 'propia'; $('#fondoBase').disabled = S.fondo.toLowerCase() === b0.fondo; $('#cTinte').hidden = S.color !== 'propio'; barras.forEach(f => f()); pintaSalida();
 }
 // pestañas
 const tabs = $$('[role=tab]'); const pestana = (t, foco) => { tabs.forEach(b => { const si = b === t; b.setAttribute('aria-selected', si); b.tabIndex = si ? 0 : -1; $('#' + b.getAttribute('aria-controls')).hidden = !si; }); $('.hojas').scrollTop = 0; if (foco) t.focus(); try { sessionStorage.setItem('pestana', t.id); } catch (e) {} const p = $('#panel').getBoundingClientRect(), y = $('.tabs').getBoundingClientRect(), es = $('#escena'); if (getComputedStyle(es).position === 'sticky' && $('.hojas').getBoundingClientRect().top < y.bottom - 2) scrollBy(0, $('.hojas').getBoundingClientRect().top - y.bottom); };
@@ -249,15 +249,16 @@ let bd = null;
 const abreBD = () => bd ? Promise.resolve(bd) : new Promise((ok, no) => { let r; try { r = indexedDB.open('mundo-en-caracteres', 1); } catch (e) { return no(e); } r.onupgradeneeded = () => r.result.createObjectStore('dibujos', { keyPath: 'id' }); r.onsuccess = () => ok(bd = r.result); r.onerror = () => no(r.error); });
 const tx = async (modo, f) => { const b = await abreBD(); return new Promise((ok, no) => { const t = b.transaction('dibujos', modo), r = f(t.objectStore('dibujos')); t.oncomplete = () => ok(r && r.result); t.onerror = t.onabort = () => no(t.error); }); };
 let conBD = true, protegido = false;
+const recuerda = () => { try { localStorage.setItem('ultimo', D.id); } catch (e) {} };
 async function guarda() {
-  pend = false; if (!D || !conBD) return; D.ejemplo = false; const copia = { ...D, ajustes: { ...motor.S }, visto: Date.now(), mini: mini() }; delete copia.ejemplo; delete copia.luzAuto;
+  pend = false; if (!D || !conBD) return; D.ejemplo = false; recuerda(); const copia = { ...D, ajustes: { ...motor.S }, visto: Date.now(), mini: mini() }; delete copia.ejemplo; delete copia.luzAuto;
   if (copia.tipo === 'modelo') copia.modelo = { ...D.modelo, partes: D.modelo.partes.map(p => ({ ...p, textura: p.textura ? (p.src = p.src || aSrc(p.textura)) : null, src: undefined })) };
   try { await tx('readwrite', s => s.put(copia)); if (!protegido && navigator.storage && navigator.storage.persist) protegido = await navigator.storage.persist(); } catch (e) { avisa(e && e.name === 'QuotaExceededError' ? 'No queda espacio en el navegador. Descarga el proyecto y borra alguno.' : 'No se pudo guardar aquí. Descarga el proyecto para no perderlo.', true); }
   $('#etiqueta').textContent = D.nombre; lista();
 }
 function mini() { const c = document.createElement('canvas'); c.width = 240; c.height = 180; motor.cuadro(performance.now()); const k = Math.max(240 / lienzo.width, 180 / lienzo.height), w = lienzo.width * k, h = lienzo.height * k; c.getContext('2d').drawImage(lienzo, (240 - w) / 2, (180 - h) / 2, w, h); return c.toDataURL('image/jpeg', .7); }
 async function abreGuardado(id) {
-  try { await suelta(); const g = await tx('readonly', s => s.get(id)); if (!g) throw 0; await restaura(g); scrollTo({ top: 0, behavior: quieto ? 'auto' : 'smooth' }); lista(); } catch (e) { avisa('Ese dibujo está dañado y no se puede abrir.', true); }
+  try { await suelta(); const g = await tx('readonly', s => s.get(id)); if (!g) throw 0; await restaura(g); recuerda(); scrollTo({ top: 0, behavior: quieto ? 'auto' : 'smooth' }); lista(); } catch (e) { avisa('Ese dibujo está dañado y no se puede abrir.', true); }
 }
 async function restaura(g) {
   D = { id: g.id, nombre: String(g.nombre).slice(0, 60), creado: g.creado, archivo: String(g.archivo || '').slice(0, 120), pistas: String(g.pistas || '').slice(0, 2000), piel: !!g.piel, tipo: g.tipo, ajustes: MotorAscii.ajustes(g.ajustes) };
@@ -279,33 +280,89 @@ async function lista() {
 }
 
 // ---------- archivos ----------
-function baja(blob, nombre) { const a = document.createElement('a'), u = URL.createObjectURL(blob); a.href = u; a.download = nombre; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 20000); }
-const archivo = e => (D.nombre.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'dibujo') + e;
-const modeloTexto = m => ({ eje: m.eje, medidas: m.medidas, partes: m.partes.map(p => ({ pos: MotorAscii.aTexto(p.pos, 'i16', 24000), nor: MotorAscii.aTexto(p.nor, 'i8', 127), uv: p.uv && MotorAscii.aTexto(p.uv, 'f32'), col: p.col && MotorAscii.aTexto(p.col, 'u8', 255), ind: p.ind && MotorAscii.aTexto(p.ind, 'u32'), color: p.color, textura: p.textura ? (typeof p.textura === 'string' ? p.textura : p.src || aSrc(p.textura)) : null })) });
+const tactil = matchMedia('(pointer: coarse)').matches, ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1), dentroDeApp = /FBAN|FBAV|Instagram|Line\/|TikTok|musical_ly|Snapchat|WhatsApp|Twitter|; wv\)/i.test(navigator.userAgent);
+let ultimo = null, salida = 1;
+// Se entrega como archivo genérico para que el navegador lo guarde y nunca lo abra en lugar de esta página.
+// La dirección temporal dura hasta la siguiente descarga: en móvil el aviso de guardar puede tardar.
+let dirs = [];
+function baja(blob, nombre) { dirs.splice(0, Math.max(0, dirs.length - 2)).forEach(u => URL.revokeObjectURL(u)); const a = document.createElement('a'), u = URL.createObjectURL(new Blob([blob], { type: 'application/octet-stream' })); dirs.push(u); a.href = u; a.download = nombre; a.rel = 'noopener'; a.hidden = true; document.body.append(a); a.click(); setTimeout(() => a.remove(), 1000); }
+const comoArchivo = f => { try { const q = new File([f.blob], f.nombre, { type: f.blob.type.split(';')[0] }); return navigator.canShare && navigator.canShare({ files: [q] }) ? q : null; } catch (e) { return null; } };
+const peso = n => n < 1e6 ? Math.max(1, Math.round(n / 1e3)) + ' KB' : (n / 1e6).toFixed(1).replace('.', ',') + ' MB';
+const respira_ = () => new Promise(ok => setTimeout(ok, 30));
+const archivo = e => (D.nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'dibujo') + e;
+const modeloTexto = m => ({ eje: m.eje, medidas: m.medidas, partes: m.partes.map(parteTexto) });
+const parteTexto = p => ({ pos: MotorAscii.aTexto(p.pos, 'i16', 24000), nor: MotorAscii.aTexto(p.nor, 'i8', 127), uv: p.uv && MotorAscii.aTexto(p.uv, 'f32'), col: p.col && MotorAscii.aTexto(p.col, 'u8', 255), ind: p.ind && MotorAscii.aTexto(p.ind, 'u32'), color: p.color, textura: p.textura ? (typeof p.textura === 'string' ? p.textura : p.src || aSrc(p.textura)) : null });
 const proyecto = g => ({ formato: 'mundo-en-caracteres', version: 1, id: g.id, nombre: g.nombre, creado: g.creado, archivo: g.archivo, pistas: g.pistas, piel: g.piel, tipo: g.tipo, ajustes: g.ajustes, imagen: g.tipo === 'imagen' ? { src: g.imagen.src, marca: g.imagen.marca ? MotorAscii.aTexto(g.imagen.marca, 'u8') : undefined } : undefined, modelo: g.tipo === 'modelo' ? modeloTexto(g.modelo) : undefined });
-async function pagina() {
-  const P = { nombre: D.nombre, tipo: D.tipo, ajustes: motor.S };
-  if (D.tipo === 'imagen') P.imagen = { an: info.an, al: info.al, prop: info.prop, marco: info.marco, capas: info.capas.map(c => ({ ...c, lienzo: undefined, src: aSrc(c.lienzo), region: MotorAscii.aTexto(c.region, 'u8'), alto: MotorAscii.aTexto(c.alto, 'u8', 255) })) };
-  else P.modelo = modeloTexto(D.modelo);
-  const fuente = await (await fetch('motor.js')).text(), json = JSON.stringify(P).replace(/</g, '\\u003c'), tit = D.nombre.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:"><title>${tit}</title><style>html,body{margin:0;height:100%;background:${motor.S.fondo};overflow:hidden}canvas{width:100%;height:100%;display:block;cursor:grab}p{position:fixed;left:16px;bottom:10px;margin:0;font:12px monospace;color:#9db3bb}</style></head><body><canvas id="l"></canvas><p id="e"></p><script type="application/json" id="d">${json}</` + `script><script>${fuente.replace(/<\/script/gi, '<\\/script')}</` + `script><script>(async()=>{const P=JSON.parse(document.getElementById('d').textContent);try{const m=new MotorAscii(document.getElementById('l'));await MotorAscii.abre(m,P);MotorAscii.gestos(m);const f=t=>{m.cuadro(t);requestAnimationFrame(f)};requestAnimationFrame(f)}catch(x){document.getElementById('e').textContent=x.message}})()</` + `script></body></html>`;
+async function pagina(av) {
+  const P = { nombre: D.nombre, tipo: D.tipo, ajustes: motor.S, solo: sal() === 2 ? 2 : sal() ? 1 : 0, soloObjeto: sal() === 3 };
+  if (D.tipo === 'imagen') { P.imagen = { an: info.an, al: info.al, prop: info.prop, marco: info.marco, capas: [] }; for (const c of info.capas) { P.imagen.capas.push({ ...c, lienzo: undefined, src: aSrc(c.lienzo), region: MotorAscii.aTexto(c.region, 'u8'), alto: MotorAscii.aTexto(c.alto, 'u8', 255) }); await av(.7 * P.imagen.capas.length / info.capas.length); } }
+  else { const m = D.modelo; P.modelo = { eje: m.eje, medidas: m.medidas, partes: [] }; for (const p of m.partes) { P.modelo.partes.push(parteTexto(p)); if (P.modelo.partes.length % 4 === 0 || m.partes.length < 12) await av(.7 * P.modelo.partes.length / m.partes.length); } }
+  const r = await fetch('motor.js'); if (!r.ok) throw Error('Falta conexión para preparar la página. Inténtalo otra vez.'); const fuente = await r.text(); await av(.85); const json = JSON.stringify(P).replace(/</g, '\\u003c'), tit = D.nombre.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:"><title>${tit}</title><style>html,body{margin:0;height:100%;background:${sal() ? '#000' : motor.S.fondo};overflow:hidden}canvas{width:100%;height:100%;display:block;cursor:grab}p{position:fixed;left:16px;bottom:10px;margin:0;font:12px monospace;color:#9db3bb}</style></head><body><canvas id="l"></canvas><p id="e"></p><script type="application/json" id="d">${json}</` + `script><script>${fuente.replace(/<\/script/gi, '<\\/script')}</` + `script><script>(async()=>{const P=JSON.parse(document.getElementById('d').textContent);try{const m=new MotorAscii(document.getElementById('l'));await MotorAscii.abre(m,P);MotorAscii.gestos(m);const f=t=>{m.cuadro(t);requestAnimationFrame(f)};requestAnimationFrame(f)}catch(x){document.getElementById('e').textContent=x.message}})()</` + `script></body></html>`;
 }
-async function video(b) {
+async function video(av, vivo) {
   if (!lienzo.captureStream || !window.MediaRecorder) throw Error('Este navegador no puede grabar video. Descarga la página animada.');
-  const tipo = ['video/mp4;codecs=avc1.42E01E', 'video/webm;codecs=vp9', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)); if (!tipo) throw Error('Este navegador no puede grabar video.');
-  const st = lienzo.captureStream(30), r = new MediaRecorder(st, { mimeType: tipo, videoBitsPerSecond: 9e6 }), tr = [], s = b.querySelector('span'), antes = s.textContent; r.ondataavailable = e => e.data.size && tr.push(e.data);
-  await new Promise(ok => { r.onstop = ok; r.start(250); let q = 6; s.textContent = 'Grabando… ' + q; const iv = setInterval(() => { s.textContent = 'Grabando… ' + --q; if (q <= 0) { clearInterval(iv); r.stop(); } }, 1000); }); s.textContent = antes; st.getTracks().forEach(t => t.stop()); baja(new Blob(tr, { type: tipo.split(';')[0] }), archivo(tipo.includes('mp4') ? '.mp4' : '.webm'));
-}
-$$('[data-baja]').forEach(b => b.addEventListener('click', async () => {
-  b.disabled = true;
+  const tipo = ['video/mp4;codecs=avc1.42E01E', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)); if (!tipo) throw Error('Este navegador no puede grabar video.');
+  const pausado = motor.pausa; ponPausa(false); let copia = lienzo, sigue = true;
+  if (sal()) { // se graba aparte, recortado al dibujo con un margen para el movimiento
+    motor.solo = sal() === 2 ? 2 : 1; motor.soloObjeto = sal() === 3; motor.cuadro(performance.now()); const [a, b, c, e] = motor.caja(), mx = (c - a) * .07 + 1, my = (e - b) * .07 + 1, x0 = Math.max(0, a - mx) * motor.cw, x1 = Math.min(motor.cols, c + mx) * motor.cw, y0 = Math.max(0, motor.filas - e - my) * motor.ch, y1 = Math.min(motor.filas, motor.filas - b + my) * motor.ch;
+    copia = document.createElement('canvas'); copia.width = Math.max(2, Math.round((x1 - x0) / 2) * 2); copia.height = Math.max(2, Math.round((y1 - y0) / 2) * 2); const k = copia.getContext('2d', { alpha: false }), pasa = () => { if (!sigue) return; k.drawImage(lienzo, x0, y0, x1 - x0, y1 - y0, 0, 0, copia.width, copia.height); requestAnimationFrame(pasa); }; pasa();
+  }
+  const st = copia.captureStream(30), tr = []; let r;
   try {
-    const k = b.dataset.baja; motor.cuadro(performance.now());
-    if (k === 'png') { const q = await new Promise(ok => lienzo.toBlob(ok, 'image/png')); baja(q, archivo('.png')); } else if (k === 'txt') baja(new Blob([motor.texto()], { type: 'text/plain;charset=utf-8' }), archivo('.txt'));
-    else if (k === 'html') baja(new Blob([await pagina()], { type: 'text/html' }), archivo('.html')); else if (k === 'proyecto') baja(new Blob([JSON.stringify(proyecto({ ...D, ajustes: motor.S }))], { type: 'application/json' }), archivo('.json')); else await video(b);
-    avisa('Descargado.');
-  } catch (x) { avisa(x.message || 'No se pudo descargar.', true); } finally { b.disabled = false; }
-}));
-$('#copia').addEventListener('click', async () => { const t = await tx('readonly', s => s.getAll()), partes = ['{"formato":"mundo-en-caracteres/copia","version":1,"dibujos":[']; t.forEach((g, i) => { partes.push((i ? ',' : '') + JSON.stringify(proyecto(g))); }); partes.push(']}'); baja(new Blob(partes, { type: 'application/json' }), 'mis-dibujos-ascii.json'); avisa('Copia descargada.'); });
+    r = new MediaRecorder(st, { mimeType: tipo, videoBitsPerSecond: tactil ? 5e6 : 9e6 }); r.ondataavailable = e => e.data.size && tr.push(e.data);
+    await new Promise((ok, no) => { r.onstop = ok; r.onerror = () => no(Error('La grabación falló. Prueba con la página animada.')); r.start(250); const t0 = performance.now(), iv = setInterval(() => { const q = (performance.now() - t0) / 6000; av(Math.min(1, q)); if (q >= 1 || !vivo()) { clearInterval(iv); if (r.state !== 'inactive') r.stop(); } }, 120); });
+  } finally { sigue = false; motor.solo = 0; motor.soloObjeto = false; st.getTracks().forEach(t => t.stop()); ponPausa(!!pausado); }
+  if (!vivo()) return null; const b = new Blob(tr, { type: tipo.split(';')[0] }); if (b.size < 2000) throw Error('La grabación salió vacía. Prueba con la página animada.'); return b;
+}
+const FORMATOS = {
+  png: ['la imagen', '.png', async () => { let l = lienzo; if (sal()) { motor.soloObjeto = sal() === 3; motor.cuadro(performance.now()); l = motor.recorte(sal() === 2 ? 2 : 1); motor.soloObjeto = false; motor.cuadro(performance.now()); } const q = await new Promise(ok => l.toBlob(ok, 'image/png')); if (!q) throw Error('No se pudo crear la imagen.'); return q; }],
+  txt: ['el texto', '.txt', async () => new Blob([motor.texto()], { type: 'text/plain' })],
+  html: ['la página animada', '.html', async av => new Blob([await pagina(av)], { type: 'text/html' })],
+  proyecto: ['el proyecto', '.json', async () => new Blob([JSON.stringify(proyecto({ ...D, ajustes: motor.S }))], { type: 'application/json' })],
+  video: ['el video', '.mp4', video],
+  copia: ['la copia de todos', '.json', async av => { const t = await tx('readonly', s => s.getAll()), partes = ['{"formato":"mundo-en-caracteres/copia","version":1,"dibujos":[']; for (let i = 0; i < t.length; i++) { partes.push((i ? ',' : '') + JSON.stringify(proyecto(t[i]))); await av((i + 1) / t.length); } partes.push(']}'); return new Blob(partes, { type: 'application/json' }); }]
+};
+// qué lleva la descarga: 1 solo el dibujo, 2 solo las letras, 0 con el fondo
+const N_SALIDA = { 3: 'Solo el objeto, sin el resto de la foto. La imagen lleva fondo transparente; el video y la página, negro.', 1: 'Recortado al dibujo. La imagen lleva fondo transparente; el video y la página, negro.', 2: 'Solo los caracteres, sin color detrás. La imagen lleva fondo transparente.', 0: 'Todo lo que ves, con el color de fondo y el resplandor.' };
+const hayObjeto = () => !!(D && D.tipo === 'imagen' && info && info.hay && !info.solo && D.ajustes.mueve === 'objeto'), sal = () => salida === 3 && !hayObjeto() ? 1 : salida;
+function pintaSalida() { $('[data-salida="3"]').disabled = !hayObjeto(); marca('[data-salida]', b => +b.dataset.salida === sal()); $('#nSalida').textContent = N_SALIDA[sal()]; }
+function ponSalida(v) { salida = v; pintaSalida(); try { localStorage.setItem('salida', v); } catch (e) {} }
+$$('[data-salida]').forEach(b => b.addEventListener('click', () => ponSalida(+b.dataset.salida))); { let v = 1; try { const g = localStorage.getItem('salida'); if (g !== null && N_SALIDA[g]) v = +g; } catch (e) {} ponSalida(v); }
+// ventana de progreso: prepara, entrega y vuelve a la lista de descargas
+const dd = $('#dDesc'); let turno = 0, cierra = 0, dirVista = '';
+const barraTxt = v => { const n = 18, k = Math.round(v * n), p = $('#dBarra'); p.textContent = '█'.repeat(k) + '░'.repeat(n - k) + ' ' + String(Math.round(v * 100)).padStart(3) + ' %'; p.setAttribute('aria-valuenow', Math.round(v * 100)); };
+const ve = o => { for (const id of ['dGuardar', 'dComp', 'dCopia']) $('#' + id).hidden = !o.includes(id); };
+let deLista = false;
+function aDescargas() { const abierta = dd.open; turno++; clearTimeout(cierra); if (abierta) dd.close(); if (abierta && !deLista) { pestana($("#t-baja")); const y = $(".descargas").getBoundingClientRect(); if (tactil && (y.top > innerHeight - 160 || y.bottom < innerHeight * .6)) scrollBy({ top: $(".tabs").getBoundingClientRect().bottom - $("#escena").getBoundingClientRect().bottom - $(".tabs").offsetHeight, behavior: quieto ? "auto" : "smooth" }); } const v = $('#dVista'); v.textContent = ''; if (dirVista) { URL.revokeObjectURL(dirVista); dirVista = ''; } }
+dd.addEventListener('cancel', e => { e.preventDefault(); aDescargas(); }); dd.addEventListener('pointerdown', () => clearTimeout(cierra)); $('#dVolver').addEventListener('click', aDescargas);
+function pintaUltimo() { $('#ultimo').hidden = !ultimo; if (!ultimo) return; $('#uNombre').textContent = ultimo.nombre + ' · ' + peso(ultimo.blob.size); $('#uComp').hidden = !comoArchivo(ultimo); }
+function entregado(t) {
+  $('#dTit').textContent = 'Listo'; $('#dBarra').hidden = true; $('#dTxt').textContent = t; $('#dGuardar').textContent = 'Guardar otra vez'; $('#dGuardar').classList.remove('lleno'); $('#dVolver').textContent = 'Volver a descargas'; dd.classList.add('hecho');
+  clearTimeout(cierra); if (!dentroDeApp) cierra = setTimeout(aDescargas, 4200);
+}
+async function comparte() { const q = ultimo && comoArchivo(ultimo); if (!q) return; clearTimeout(cierra); try { await navigator.share({ files: [q], title: ultimo.nombre }); entregado('Archivo entregado.'); } catch (e) { if (e.name !== 'AbortError') { baja(ultimo.blob, ultimo.nombre); entregado(avisoGuardado()); } } }
+const avisoGuardado = () => dentroDeApp ? 'Si no se guardó, es porque el navegador de esta aplicación no deja descargar. Abre esta página en Chrome o Safari.' : tactil ? 'Enviado a las descargas del teléfono. Si tu navegador pregunta, acepta guardar.' : 'Enviado a tu carpeta de descargas.';
+// en iPhone lo fiable es la hoja del sistema («Guardar en Archivos»); en el resto, la descarga normal
+const entrega = () => { if (!ultimo) return; if (ios && comoArchivo(ultimo)) return comparte(); baja(ultimo.blob, ultimo.nombre); entregado(avisoGuardado()); };
+$('#dGuardar').addEventListener('click', entrega); $('#dComp').addEventListener('click', comparte); $('#uGuardar').addEventListener('click', () => { abreVentana('Archivo listo'); entrega(); }); $('#uComp').addEventListener('click', comparte);
+$('#dCopia').addEventListener('click', async () => { try { await navigator.clipboard.writeText(await ultimo.blob.text()); entregado('Texto copiado.'); } catch (e) { $('#dTxt').textContent = 'No se pudo copiar.'; } });
+function abreVentana(t) { dd.classList.remove('hecho', 'mal'); $('#dTit').textContent = t; $('#dTxt').textContent = ''; $('#dBarra').hidden = false; $('#dGuardar').textContent = 'Guardar archivo'; $('#dGuardar').classList.add('lleno'); $('#dVolver').textContent = 'Cancelar'; ve([]); barraTxt(0); if (!dd.open) dd.showModal(); }
+async function descarga(k) {
+  deLista = k === "copia"; const [que, ext, hace] = FORMATOS[k], yo = ++turno, vivo = () => yo === turno && dd.open; clearTimeout(cierra); $('#dVista').textContent = ''; $('#dVista').classList.remove('cuadros'); motor.cuadro(performance.now()); abreVentana((k === 'video' ? 'Grabando ' : 'Preparando ') + que); $('#dTxt').textContent = k === 'video' ? 'Tarda 6 segundos. No cambies de aplicación.' : 'Un momento…';
+  const im = new Image(); im.alt = ''; im.src = mini(); $('#dVista').append(im); const t0 = performance.now();
+  const av = async v => { if (vivo()) barraTxt(Math.min(.97, v)); await respira_(); };
+  try {
+    await respira_(); const blob = await hace(av, vivo); if (!vivo() || !blob) return; while (performance.now() - t0 < 700) { if (!vivo()) return; barraTxt(Math.min(.99, Math.max(.3, (performance.now() - t0) / 700))); await respira_(); } if (!vivo()) return; barraTxt(1);
+    ultimo = { blob, nombre: k === 'copia' ? 'mis-dibujos-ascii.json' : archivo(k === 'video' && blob.type.includes('webm') ? '.webm' : ext) }; pintaUltimo();
+    // vista previa del archivo real: si el navegador no deja descargar, la imagen se guarda manteniéndola pulsada
+    if (k === 'png' || k === 'video') { if (dirVista) URL.revokeObjectURL(dirVista); dirVista = URL.createObjectURL(blob); const m = document.createElement(k === 'png' ? 'img' : 'video'); if (k === 'video') Object.assign(m, { muted: true, loop: true, autoplay: true, playsInline: true, controls: true }); else m.alt = 'Vista previa'; m.src = dirVista; $('#dVista').classList.toggle('cuadros', k === 'png' && sal() > 0); $('#dVista').replaceChildren(m); }
+    ve(['dGuardar'].concat(comoArchivo(ultimo) ? ['dComp'] : [], k === 'txt' ? ['dCopia'] : []));
+    if (tactil) { $('#dTit').textContent = 'Archivo listo'; $('#dTxt').textContent = ultimo.nombre + ' · ' + peso(blob.size) + (k === 'png' ? '. También puedes mantener pulsada la imagen para guardarla.' : '.') + (dentroDeApp ? ' Estás en el navegador de otra aplicación: si no se guarda, abre esta página en Chrome o Safari.' : ''); $('#dVolver').textContent = 'Volver a descargas'; $('#dGuardar').focus(); }
+    else { baja(blob, ultimo.nombre); entregado(ultimo.nombre + ' · ' + peso(blob.size) + '. ' + avisoGuardado()); }
+  } catch (x) { if (!vivo()) return; dd.classList.add('mal'); $('#dTit').textContent = 'No se pudo descargar'; $('#dBarra').hidden = true; $('#dTxt').textContent = x.message || 'Algo falló.'; ve([]); $('#dVolver').textContent = 'Volver a descargas'; }
+}
+$$('[data-baja]').forEach(b => b.addEventListener('click', () => descarga(b.dataset.baja))); $('#copia').addEventListener('click', () => descarga('copia'));
 // importa un proyecto o una copia; se revisa todo antes de aceptarlo
 async function importa(f) {
   if (f.size > 400e6) throw Error('La copia es demasiado grande.'); let j; try { j = JSON.parse(await f.text()); } catch (e) { throw Error('Ese archivo no es un proyecto del generador.'); }
@@ -321,7 +378,7 @@ async function importa(f) {
 
 // ---------- arranque ----------
 // vista: en pantallas táctiles arranca bloqueada, para que al bajar por la página no se gire ni se acerque
-const tactil = matchMedia('(pointer: coarse)').matches; let libre = !tactil, avisado = false;
+let libre = !tactil, avisado = false;
 function ponLibre(v) { libre = v; lienzo.style.touchAction = v ? 'none' : 'pan-y'; lienzo.classList.toggle('fija', !v); const b = $('#candado'), n = v ? 'Bloquear la vista' : 'Desbloquear la vista para girar y acercar'; b.setAttribute('aria-label', n); b.title = n; b.setAttribute('aria-pressed', !v); b.querySelector('path').setAttribute('d', v ? 'M5 11h14v9H5zM8 11V7a4 4 0 0 1 7.6-1.7' : 'M5 11h14v9H5zM8 11V7a4 4 0 0 1 8 0v4'); }
 $('#candado').addEventListener('click', () => { ponLibre(!libre); avisa(libre ? (tactil ? 'Un dedo gira, dos acercan.' : 'Arrastra para girar. Ctrl y rueda para acercar.') : 'Vista bloqueada.'); }); ponLibre(libre);
 MotorAscii.gestos(motor, () => { barras.forEach(f => f()); cambio(); }, { libre: () => libre, rueda: e => libre && (e.ctrlKey || e.metaKey) });
@@ -331,5 +388,7 @@ document.addEventListener('gesturestart', e => e.preventDefault());
 lienzo.addEventListener('keydown', e => { const k = { ArrowLeft: -.15, ArrowRight: .15 }[e.key]; if (k && libre) { motor.S.giroY += k; e.preventDefault(); cambio(); } else if (e.key === 'Enter') motor.toca(performance.now()); else if (e.key === ' ') { e.preventDefault(); ponPausa(!motor.pausa); } });
 let visible = true; document.addEventListener('visibilitychange', () => visible = !document.hidden);
 const bucle = ms => { if (visible && D) motor.cuadro(ms); requestAnimationFrame(bucle); };
-(async () => { try { await ejemplo(); } catch (e) { avisa(e.message, true); } requestAnimationFrame(bucle); lista(); })();
+// si el móvil quita la gráfica, se monta otra vez el mismo dibujo
+lienzo.addEventListener('webglcontextlost', e => e.preventDefault()); lienzo.addEventListener('webglcontextrestored', async () => { try { motor._arma(); motor.rk = ''; if (D) await muestra(false); } catch (e) { avisa('Recarga la página para ver el dibujo.', true); } });
+(async () => { try { let g = null; try { const id = localStorage.getItem('ultimo'); g = id && await tx('readonly', s => s.get(id)); } catch (e) {} try { if (g) await restaura(g); } catch (e) { g = null; } if (!g) await ejemplo(); } catch (e) { avisa(e.message, true); } requestAnimationFrame(bucle); lista(); })();
 })();

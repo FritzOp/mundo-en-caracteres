@@ -6,7 +6,7 @@
 <meta name="description" content="Convierte imágenes y modelos 3D en arte ASCII animado. Todo ocurre en tu navegador: nada se sube a ningún sitio.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wdth,wght@75..100,300..800&family=Martian+Mono:wght@300..600&display=swap">
-<link rel="stylesheet" href="generador.css?v=24"></head>
+<link rel="stylesheet" href="generador.css?v=28"></head>
 <body>
 <header><a href="index.html" class="marca">Mundo en caracteres</a><nav aria-label="Secciones"><a href="index.html#indice">Galería</a><span aria-current="page">Generador</span></nav></header>
 <main>
@@ -64,6 +64,8 @@
     <button type="button" id="ajusteBase">Restablecer estos ajustes</button>
    </div>
    <div role="tabpanel" id="p-baja" aria-labelledby="t-baja" hidden>
+    <h2>Qué incluye</h2><div class="dos cuatro" role="group" aria-label="Qué incluye la descarga"><button type="button" data-salida="1">Dibujo completo</button><button type="button" data-salida="3">Solo el objeto</button><button type="button" data-salida="2">Solo las letras</button><button type="button" data-salida="0">Con el fondo</button></div>
+    <p class="nota" id="nSalida"></p>
     <div class="descargas">
      <button type="button" data-baja="html"><b>Página animada</b><span>.html que se abre sin internet</span></button>
      <button type="button" data-baja="png"><b>Imagen</b><span>.png del momento actual</span></button>
@@ -71,6 +73,7 @@
      <button type="button" data-baja="txt"><b>Texto</b><span>.txt para copiar y pegar</span></button>
      <button type="button" data-baja="proyecto"><b>Proyecto</b><span>.json para seguir editando</span></button>
     </div>
+    <div id="ultimo" hidden><p><b>Último archivo</b><span id="uNombre"></span></p><div class="fila"><button type="button" id="uGuardar">Guardar otra vez</button><button type="button" id="uComp">Compartir</button></div></div>
     <p class="nota">El dibujo ya está guardado en este navegador. Descarga el proyecto si quieres conservarlo fuera.</p>
    </div>
   </div>
@@ -84,5 +87,12 @@
    <p>Para no perderlos, descarga el proyecto o la copia de todos. Ese archivo se puede abrir aquí más adelante, también en otro equipo.</p></details>
  </section>
 </main>
-<script src="motor.js?v=24"></script><script src="modelos.js?v=24"></script><script src="objeto.js?v=24"></script><script src="generador.js?v=24"></script>
+<dialog id="dDesc" aria-labelledby="dTit">
+ <div id="dVista"></div>
+ <h2 id="dTit"></h2>
+ <p id="dBarra" role="progressbar" aria-valuemin="0" aria-valuemax="100"></p>
+ <p id="dTxt" class="nota" role="status"></p>
+ <div class="fila"><button type="button" class="lleno" id="dGuardar">Guardar archivo</button><button type="button" id="dComp">Compartir</button><button type="button" id="dCopia">Copiar texto</button><button type="button" id="dVolver"></button></div>
+</dialog>
+<script src="motor.js?v=28"></script><script src="modelos.js?v=28"></script><script src="objeto.js?v=28"></script><script src="generador.js?v=28"></script>
 </body></html>

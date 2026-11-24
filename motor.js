@@ -21,6 +21,10 @@ class MotorAscii {
     this.lienzo = lienzo; this.S = MotorAscii.ajustes({}); this.partes = []; this.tipo = null; this.eje = [1, 0, 0]; this.prop = 1; this.toque = -9; this.desfase = 0;
     const gl = this.gl = lienzo.getContext('webgl2', { antialias: false, alpha: false, preserveDrawingBuffer: !!opc.guardar });
     if (!gl) throw Error('Este navegador no tiene WebGL2 activado.');
+    this._arma();
+  }
+  _arma() {
+    const gl = this.gl; this.partes = []; this.clave = '';
     gl.bindVertexArray(gl.createVertexArray());
     this.pFig = this._prog(MotorAscii.V_FIG, MotorAscii.F_FIG); this.pMez = this._prog(MotorAscii.V_PAN, MotorAscii.F_MEZ); this.pFin = this._prog(MotorAscii.V_PAN, MotorAscii.F_FIN);
     this.blanca = this._tex(null, 1, 1, new Uint8Array([255, 255, 255, 255])); this.negra = this._tex(null, 1, 1, new Uint8Array([0, 0, 0, 0])); this.region = this.negra;
@@ -91,7 +95,7 @@ class MotorAscii {
   }
   toca(ms) { if ((ms / 1000 - this.toque) > 2.2) this.toque = ms / 1000; }
   cuadro(ms) {
-    const gl = this.gl, S = this.S; this.mide();
+    const gl = this.gl, S = this.S; if (gl.isContextLost()) return; this.mide();
     const dt = Math.max(0, Math.min(100, ms - (this.um === undefined ? ms : this.um))); this.um = ms; if (this.rel === undefined) this.rel = ms / 1000; if (!this.pausa) this.rel += dt / 1000 * S.velocidad;
     const t = this.rel + this.desfase, A = MotorAscii.ANIM.map(a => S.anim.includes(a) ? S.fuerza : 0), hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
     const tq = ms / 1000 - this.toque, acc = tq > 0 && tq < 2 ? Math.min(1, tq * 5) * Math.min(1, (2 - tq) * 2) : 0;
@@ -99,19 +103,32 @@ class MotorAscii {
     const p = this.pFig; gl.useProgram(p.p); const u = p.u, asp = this.lienzo.width / this.lienzo.height, im = this.tipo === 'imagen';
     gl.uniform1fv(u.A, A); gl.uniform1f(u.t, t); gl.uniform1f(u.asp, asp); gl.uniform1f(u.acc, acc); gl.uniform1f(u.tq, Math.max(0, Math.min(9, tq))); gl.uniform1f(u.zoom, S.zoom); gl.uniform2f(u.giro, S.giroX, S.giroY); gl.uniform3fv(u.eje, this.eje); gl.uniform1f(u.imagen, im ? 1 : 0); gl.uniform1f(u.relieve, S.relieve); gl.uniform1f(u.contexto, S.contexto ? S.fuerza : 0); gl.uniform1f(u.prop, this.prop);
     gl.uniform1f(u.atras, S.atras); gl.uniform1i(u.foto, 0); gl.uniform1i(u.region, 1);
-    for (const q of this.partes) { if (q.capa === 2) gl.clear(gl.DEPTH_BUFFER_BIT); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, q.region || this.negra); gl.activeTexture(gl.TEXTURE0); gl.uniform1f(u.capa, q.capa || 0); gl.uniform4fv(u.caja, q.caja || [0, 0, 1, 1]); gl.uniform4fv(u.pegado, q.pegado || [0, 0, 0, 0]); gl.uniform3fv(u.eje, q.eje || this.eje); gl.bindVertexArray(q.vao); gl.bindTexture(gl.TEXTURE_2D, q.tex); gl.uniform3fv(u.color, q.color); gl.uniform1f(u.hayCol, q.hayCol ? 1 : 0); gl.uniform1f(u.hayUv, q.hayUv ? 1 : 0); if (q.ind) gl.drawElements(gl.TRIANGLES, q.n, gl.UNSIGNED_INT, 0); else gl.drawArrays(gl.TRIANGLES, 0, q.n); }
+    for (const q of this.partes) { if (this.soloObjeto && q.capa === 1) continue; if (q.capa === 2) gl.clear(gl.DEPTH_BUFFER_BIT); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, q.region || this.negra); gl.activeTexture(gl.TEXTURE0); gl.uniform1f(u.capa, q.capa || 0); gl.uniform4fv(u.caja, q.caja || [0, 0, 1, 1]); gl.uniform4fv(u.pegado, q.pegado || [0, 0, 0, 0]); gl.uniform3fv(u.eje, q.eje || this.eje); gl.bindVertexArray(q.vao); gl.bindTexture(gl.TEXTURE_2D, q.tex); gl.uniform3fv(u.color, q.color); gl.uniform1f(u.hayCol, q.hayCol ? 1 : 0); gl.uniform1f(u.hayUv, q.hayUv ? 1 : 0); if (q.ind) gl.drawElements(gl.TRIANGLES, q.n, gl.UNSIGNED_INT, 0); else gl.drawArrays(gl.TRIANGLES, 0, q.n); }
     gl.bindVertexArray(null); gl.disable(gl.DEPTH_TEST);
     const capa = (pr, fb, w, h) => { gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.viewport(0, 0, w, h); gl.useProgram(pr.p); return pr.u; };
     let m = capa(this.pMez, this.capas[1].fb, this.cols, this.filas); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.capas[0].tex);
-    gl.uniform1i(m.img, 0); gl.uniform2f(m.res, this.cols, this.filas); gl.uniform1f(m.t, t); gl.uniform1f(m.acc, acc); gl.uniform1f(m.tq, Math.max(0, Math.min(9, tq))); gl.uniform1fv(m.A, A); gl.uniform1f(m.luz, S.luz); gl.uniform1f(m.marco, this.marco ? 1 : 0); gl.uniform4f(m.aj, S.brillo, S.contraste, S.saturacion, S.invertir ? 1 : 0); gl.uniform1i(m.modo, MotorAscii.COLORES[S.color]); gl.uniform3fv(m.tinte, hex(S.tinte)); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.uniform1i(m.img, 0); gl.uniform2f(m.res, this.cols, this.filas); gl.uniform1f(m.t, t); gl.uniform1f(m.acc, acc); gl.uniform1f(m.tq, Math.max(0, Math.min(9, tq))); gl.uniform1fv(m.A, A); gl.uniform1f(m.luz, S.luz); gl.uniform1f(m.marco, this.marco && !this.soloObjeto ? 1 : 0); gl.uniform4f(m.aj, S.brillo, S.contraste, S.saturacion, S.invertir ? 1 : 0); gl.uniform1i(m.modo, MotorAscii.COLORES[S.color]); gl.uniform3fv(m.tinte, hex(S.tinte)); gl.drawArrays(gl.TRIANGLES, 0, 3);
     m = capa(this.pFin, null, this.lienzo.width, this.lienzo.height); gl.bindTexture(gl.TEXTURE_2D, this.capas[1].tex); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.letras); gl.activeTexture(gl.TEXTURE0);
-    gl.uniform1i(m.img, 0); gl.uniform1i(m.letras, 1); gl.uniform2f(m.celda, this.cw, this.ch); gl.uniform2f(m.rejilla, this.cols, this.filas); gl.uniform1f(m.n, this.letrasDe().length); gl.uniform1fv(m.tinta, this.tinta); gl.uniform1f(m.res, S.resplandor); gl.uniform3fv(m.fondo, hex(S.fondo)); gl.uniform1f(m.t, t); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.uniform1f(m.solo, -(this.solo || 0)); gl.uniform1i(m.img, 0); gl.uniform1i(m.letras, 1); gl.uniform2f(m.celda, this.cw, this.ch); gl.uniform2f(m.rejilla, this.cols, this.filas); gl.uniform1f(m.n, this.letrasDe().length); gl.uniform1fv(m.tinta, this.tinta); gl.uniform1f(m.res, S.resplandor); gl.uniform3fv(m.fondo, hex(S.fondo)); gl.uniform1f(m.t, t); gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   // cuánta luz le falta a la figura para que se lea bien
   luzIdeal() {
     const gl = this.gl, w = this.cols * 2, h = this.filas * 2, d = new Uint8Array(w * h * 4), v = [], at = this.S.atras; this.S.atras = 1; this.cuadro(performance.now()); this.S.atras = at; gl.bindFramebuffer(gl.FRAMEBUFFER, this.capas[0].fb); gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, d); gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 128) { const q = Math.max(d[i], d[i + 1], d[i + 2]); if (q > 6) v.push(q); } if (!v.length) return 1; v.sort((a, b) => a - b);
     const q = .85 / Math.max(.02, v[Math.floor(v.length * .85)] / 255); return Math.round(Math.max(1, Math.min(this.tipo === 'modelo' ? 3 : 1.8, q)) * 20) / 20;
+  }
+  // parte de la rejilla que ocupa el dibujo: [x0, y0, x1, y1] en celdas, con y hacia arriba
+  caja() {
+    const gl = this.gl, w = this.cols, h = this.filas, d = new Uint8Array(w * h * 4); gl.bindFramebuffer(gl.FRAMEBUFFER, this.capas[1].fb); gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, d); gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    let a = w, b = h, c = -1, e = -1; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 100) { a = Math.min(a, x); c = Math.max(c, x); b = Math.min(b, y); e = Math.max(e, y); } return c < 0 ? [0, 0, w, h] : [a, b, c + 1, e + 1];
+  }
+  // el dibujo recortado en un lienzo transparente, con letras nítidas aunque la pantalla sea pequeña
+  recorte(solo) {
+    const gl = this.gl, [a, b, c, e] = this.caja(), mx = Math.min(4096, gl.getParameter(gl.MAX_TEXTURE_SIZE)), cw = Math.max(6, Math.floor(Math.min(Math.max(this.cw, 1900 / this.cols), mx / this.cols, mx / this.filas / 1.75))), ch = Math.round(cw * this.ch / this.cw), W = cw * this.cols, H = ch * this.filas;
+    const t = gl.createTexture(), fb = gl.createFramebuffer(); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+    const u = this.pFin.u; gl.viewport(0, 0, W, H); gl.useProgram(this.pFin.p); gl.bindTexture(gl.TEXTURE_2D, this.capas[1].tex); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.letras); gl.activeTexture(gl.TEXTURE0); gl.uniform1f(u.solo, solo); gl.uniform2f(u.celda, cw, ch); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    const w = (c - a) * cw, h = (e - b) * ch, d = new Uint8Array(w * h * 4); gl.readPixels(a * cw, b * ch, w, h, gl.RGBA, gl.UNSIGNED_BYTE, d); gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.deleteFramebuffer(fb); gl.deleteTexture(t);
+    const l = document.createElement('canvas'); l.width = w; l.height = h; const x = l.getContext('2d'), m = x.createImageData(w, h); for (let y = 0; y < h; y++) m.data.set(d.subarray((h - 1 - y) * w * 4, (h - y) * w * 4), y * w * 4); x.putImageData(m, 0, 0); return l;
   }
   // el cuadro actual como texto
   texto() {
@@ -202,17 +219,19 @@ void main(){
  if(A[15]>0.){float r=h(vec2(g.x,7.)),y=fract(u.y+t*(.12+.2*r)+r);float e=pow(1.-y,6.)*step(.35,r);q+=vec3(.1,.9,.35)*A[15]*e*(.25+.55*hueco)*step(.25,h(g+floor(t*6.)));}
  if(A[16]>0.)q*=1.+A[16]*(.35*smoothstep(.03,.0,abs(u.y-fract(1.-t*.22)))-.1*step(.5,fract(g.y*.5)));
  if(marco>.5)q=mix(q,antes,hueco);
- o=vec4(clamp(q,0.,1.),1);
+ q=clamp(q,0.,1.);o=vec4(q,max(1.-hueco,step(.05,max(q.r,max(q.g,q.b)))));
 }`;
 MotorAscii.F_FIN = `
-uniform sampler2D img,letras;uniform vec2 celda,rejilla;uniform float n,res,t,tinta[64];uniform vec3 fondo;out vec4 o;
+uniform sampler2D img,letras;uniform vec2 celda,rejilla;uniform float n,res,t,tinta[64],solo;uniform vec3 fondo;out vec4 o;
 float L(float i,vec2 k){return texture(letras,vec2((clamp(i,0.,n-1.)+clamp(k.x,.02,.98))/n,k.y)).r;}
 void main(){vec2 f=gl_FragCoord.xy/celda,k=fract(f);vec3 c=texelFetch(img,ivec2(min(floor(f),rejilla-1.)),0).rgb;float l=max(c.r,max(c.g,c.b));
  float q0=clamp(pow(l,.65),0.,.999),id=floor(q0*n),g=L(id,k);g*=clamp(q0*tinta[int(n)-1]/tinta[int(id)],.72,1.2);vec3 b=vec3(0);float w=0.;
  if(res>0.){for(int j=1;j<22;j++){float r=sqrt(float(j))*1.2,a=float(j)*2.4,q=exp(-r*.35);b+=texture(img,(f+vec2(cos(a)*1.6,sin(a))*r)/rejilla).rgb*q;w+=q;}b/=w;}
  // la letra sustituye a su base en vez de sumarse: así ningún canal se quema y el color no cambia
  vec3 sue=texture(img,f/rejilla).rgb,tono=c/max(l,.001)*min(pow(l,.42),1.),ba=fondo*(1.-l)+sue*.52+b*res*.24*(1.-l);
- o=vec4(mix(ba,tono,clamp(g,0.,1.)),1);}`;
+ g=clamp(g,0.,1.);o=vec4(mix(ba,tono,g),1);
+ // solo el dibujo (1) o solo las letras (2): sin fondo ni resplandor, con transparencia. Negativo: sobre negro
+ if(solo!=0.){vec4 z=texelFetch(img,ivec2(min(floor(f),rejilla-1.)),0);float al=step(.4,z.a);o=abs(solo)<1.5?vec4(mix(z.rgb*.52,tono,g),al):vec4(tono,g*al);if(solo<0.)o=vec4(o.rgb*o.a,1);}}`;
 // Números compactos en base64, para guardar y para los archivos descargados
 MotorAscii.TIPOS = { i16: Int16Array, i8: Int8Array, u8: Uint8Array, u32: Uint32Array, f32: Float32Array };
 MotorAscii.aTexto = (d, tipo, esc = 1) => { const T = MotorAscii.TIPOS[tipo], q = esc === 1 && d instanceof T ? d : T.from(d, v => Math.round(v * esc)), b = new Uint8Array(q.buffer, q.byteOffset, q.byteLength); let t = ''; for (let i = 0; i < b.length; i += 32768) t += String.fromCharCode.apply(null, b.subarray(i, i + 32768)); return btoa(t); };
@@ -225,7 +244,7 @@ MotorAscii.modeloDe = async m => {
 };
 // abre lo que va dentro de un .html descargado
 MotorAscii.abre = async (motor, P) => {
-  motor.S = MotorAscii.ajustes(P.ajustes);
+  motor.S = MotorAscii.ajustes(P.ajustes); motor.solo = P.solo === 1 || P.solo === 2 ? P.solo : 0; motor.soloObjeto = P.soloObjeto === true;
   if (P.tipo === 'imagen') {
     const i = P.imagen, an = i.an | 0, al = i.al | 0, n = an * al, capas = [];
     for (const c of i.capas) { const alto = MotorAscii.deTexto(c.alto, 'u8', 255), region = MotorAscii.deTexto(c.region, 'u8'); if (an < 2 || al < 2 || alto.length !== n || region.length !== n * 4) throw Error('Datos dañados'); capas.push({ ...c, lienzo: await MotorAscii.lienzoDe(c.src), alto, region }); }
