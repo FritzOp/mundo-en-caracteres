@@ -51,3 +51,4 @@ details{max-width:65ch;color:var(--bruma)}summary{cursor:pointer;color:var(--hue
 #ultimo{display:grid;gap:10px;padding:12px;border:1px solid var(--borde)}#ultimo p{margin:0;display:grid;font-size:.9rem}#ultimo span{color:var(--bruma);overflow-wrap:anywhere}
 .cuatro{gap:6px}.cuatro button+button{border-left:1px solid var(--borde)}.cuatro button{padding:10px 8px;font-size:.88rem}
 .cuadros{background:repeating-conic-gradient(#1b2a31 0 25%,#0c161b 0 50%) 0/18px 18px!important}
+.campo input::placeholder{color:var(--bruma);opacity:.7}

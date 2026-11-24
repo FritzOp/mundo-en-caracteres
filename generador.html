@@ -6,7 +6,7 @@
 <link rel="icon" href="icono.svg" type="image/svg+xml"><link rel="icon" href="icono-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="icono-180.png"><meta name="theme-color" content="#01040c">
 <meta name="description" content="Convierte imágenes y modelos 3D en arte ASCII animado. Todo ocurre en tu navegador: nada se sube a ningún sitio.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" href="generador.css?v=36"><link rel="preload" as="style" href="animaciones.css?v=5"><script defer src="animaciones.js?v=8"></script><script defer src="motor.js?v=36"></script><script defer src="modelos.js?v=36"></script><script defer src="objeto.js?v=36"></script><script defer src="generador.js?v=37"></script>
+<link rel="preload" as="style" href="generador.css?v=37"><link rel="preload" as="style" href="animaciones.css?v=5"><script defer src="animaciones.js?v=8"></script><script defer src="motor.js?v=36"></script><script defer src="modelos.js?v=36"></script><script defer src="objeto.js?v=36"></script><script defer src="generador.js?v=38"></script>
 <style>html{background:#01040c}#esq{position:fixed;inset:0;z-index:40;background:#01040c;color:#9db3bb;font:500 14px/1.4 Consolas,"DejaVu Sans Mono",monospace;overflow:hidden;transition:opacity .18s}#esq>*{animation:eq-ve .25s .85s both}.lista #esq{opacity:0;pointer-events:none}
 #esq i{display:block;background:linear-gradient(100deg,#0c1d26 35%,#1d3d49 50%,#0c1d26 65%) 0 0/300% 100%;animation:eq-luz 1.5s linear infinite}
 #esq pre{margin:0;font:700 clamp(7px,var(--eq,1.05vw),15px)/1.12 Consolas,"DejaVu Sans Mono",monospace;color:#0000;background:linear-gradient(100deg,#17323d 38%,#ffb14a 50%,#17323d 62%) 0 0/300% 100%;-webkit-background-clip:text;background-clip:text;animation:eq-luz 2.2s linear infinite}
@@ -40,7 +40,7 @@ o##%%%%%%####OOOOOOOOOooooooo**++=--:........
           ...::::-::::.............
              ...................
                     .....</pre></div><div class="eq-pan"><i style="width:58%;height:32px"></i><i style="width:96%;height:14px"></i><i style="width:70%;height:14px"></i><div><i style="width:126px;height:42px"></i><i style="width:112px;height:42px"></i></div><i style="width:100%;height:40px"></i><div><i style="width:58px;height:16px"></i><i style="width:92px;height:16px"></i><i style="width:64px;height:16px"></i><i style="width:84px;height:16px"></i></div><div class="eq-tar"><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i></div><div class="eq-tar"><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i></div></div><p>La conexión va lenta. Sigue cargando…</p><p>¿No avanza? <a href="">Volver a intentarlo</a></p></div>
-<link rel="stylesheet" href="generador.css?v=36"><link rel="stylesheet" href="animaciones.css?v=5">
+<link rel="stylesheet" href="generador.css?v=37"><link rel="stylesheet" href="animaciones.css?v=5">
 <header><a href="index.html" class="marca">Mundo en caracteres</a><nav aria-label="Secciones"><a href="index.html#indice">Galería</a><span aria-current="page">Generador</span></nav></header>
 <main>
  <section id="escena" aria-label="Dibujo">
@@ -68,7 +68,7 @@ o##%%%%%%####OOOOOOOOOooooooo**++=--:........
    <p class="nota">Imagen (PNG, JPG, WebP, GIF) o modelo 3D (GLB, OBJ, STL, PLY). No sale de tu navegador.</p>
    <div class="fila"><button type="button" class="lleno" id="elegir">Elegir archivo</button><button type="button" id="nuevo">Ver ejemplo</button></div>
    <input type="file" id="archivo" hidden>
-   <label class="campo">Nombre<input id="nombre" maxlength="60" autocomplete="off" spellcheck="false"></label>
+   <label class="campo">Nombre<input id="nombre" placeholder="Ponle un nombre" maxlength="60" autocomplete="off" spellcheck="false"></label>
   </div>
   <div class="tabs" role="tablist" aria-label="Opciones del dibujo">
    <button type="button" role="tab" id="t-estilo" aria-controls="p-estilo" aria-selected="true">Estilo</button>

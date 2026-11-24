@@ -116,7 +116,7 @@ async function muestra(nuevo) {
   motor.S = D.ajustes; if (nuevo) D.ajustes.luz = D.luzAuto = motor.luzIdeal(); $('#contexto').textContent = c.ve.length ? 'He encontrado: ' + c.ve.join(', ') + '.' : 'No he reconocido nada en concreto.';
   pintaPanel(); if (hId !== D.id) { ponPausa(false); anota(); }
 }
-const LIM = 30e6, inicial = () => MotorAscii.ajustes({ columnas: Math.max(88, Math.min(210, Math.round(lienzo.clientWidth / 5.4 / 2) * 2)) });
+const N_EJ = 'Ejemplo: la costa', LIM = 30e6, inicial = () => MotorAscii.ajustes({ columnas: Math.max(88, Math.min(210, Math.round(lienzo.clientWidth / 5.4 / 2) * 2)) });
 async function abreArchivo(f) {
   if (!f) return; const e = Modelos.ext(f.name), quita = A.letras($('#escena')), t0 = performance.now();
   try {
@@ -147,7 +147,7 @@ function ejemplo() {
   x.fillStyle = '#d8b878'; x.beginPath(); x.ellipse(250, 640, 360, 130, 0, 0, 7); x.fill(); x.strokeStyle = '#6b4526'; x.lineWidth = 26; x.beginPath(); x.moveTo(210, 600); x.quadraticCurveTo(180, 400, 290, 250); x.stroke();
   x.strokeStyle = '#2e8b3a'; x.lineWidth = 20; x.lineCap = 'round'; for (const [a, b] of [[120, 250], [150, 180], [270, 130], [400, 170], [450, 250], [400, 320], [190, 320]]) { x.beginPath(); x.moveTo(290, 250); x.quadraticCurveTo((290 + a) / 2, Math.min(250, b) - 40, a, b); x.stroke(); }
   x.fillStyle = '#e9e2d0'; x.beginPath(); x.moveTo(600, 420); x.lineTo(760, 420); x.lineTo(735, 455); x.lineTo(625, 455); x.fill(); x.beginPath(); x.moveTo(680, 410); x.lineTo(680, 270); x.lineTo(760, 405); x.fill(); x.beginPath(); x.moveTo(670, 410); x.lineTo(670, 290); x.lineTo(605, 405); x.fill();
-  D = { id: uid(), nombre: 'Ejemplo: la costa', creado: Date.now(), pistas: '', tipo: 'imagen', imagen: { src: aSrc(c) }, ajustes: inicial(), ejemplo: true }; return muestra(true);
+  D = { id: uid(), nombre: N_EJ, creado: Date.now(), pistas: '', tipo: 'imagen', imagen: { src: aSrc(c) }, ajustes: inicial(), ejemplo: true }; return muestra(true);
 }
 
 // ---------- panel ----------
@@ -185,7 +185,7 @@ barra('#dLuz', 'luz', 'Luz', .3, 4, .05, pc); const bAtras = barra('#dLuz', 'atr
 for (const a of MotorAscii.ANIM) { const b = crea('button', '', N_ANIM[a]); b.dataset.a = a; b.addEventListener('click', () => { const s = new Set(D.ajustes.anim); s.has(a) ? s.delete(a) : s.add(a); if (quieto && !D.ajustes.velocidad) D.ajustes.velocidad = 1; ponPausa(false); toma({ anim: MotorAscii.ANIM.filter(q => s.has(q)) }); }); $(AMBIENTE.includes(a) ? '#ambiente' : '#anims').append(b); }
 const marca = (sel, f) => $$(sel).forEach(b => b.setAttribute('aria-pressed', !!f(b)));
 function pintaPanel() {
-  const S = D.ajustes; if (document.activeElement !== $('#nombre')) $('#nombre').value = D.nombre; $('#etiqueta').textContent = D.nombre + (D.ejemplo ? ' (aún sin guardar)' : '');
+  const S = D.ajustes; if (document.activeElement !== $('#nombre')) $('#nombre').value = D.nombre === N_EJ || D.nombre === 'Sin título' ? '' : D.nombre; $('#etiqueta').textContent = D.nombre + (D.ejemplo ? ' (aún sin guardar)' : '');
   marca('[data-a]', b => S.anim.includes(b.dataset.a)); marca('[data-rampa]', b => b.dataset.rampa === S.rampa); marca('[data-color]', b => b.dataset.color === S.color); marca('[data-fondo]', b => b.dataset.fondo === S.fondo.toLowerCase()); marca('#estilos button', b => Object.entries(b.estilo).every(([k, v]) => S[k] === v));
   for (const k of ['propia', 'tinte', 'fondo']) if (document.activeElement !== $('#' + k) || k !== 'propia') $('#' + k).value = S[k]; $('[data-color=propio] .gota').style.background = S.tinte; $('#invertir').checked = S.invertir; $('#sinFondo').checked = S.sinFondo; $('#contextoOn').checked = S.contexto;
   const im = D.tipo === 'imagen', sinObj = !im || !info.hay || info.solo, mv = im && !info.hay ? 'todo' : S.mueve; $('#cSinFondo').hidden = !im || !info.hay || info.hayAlfa; $('#cObjeto').hidden = !im || info.hayAlfa; $('#borrar').hidden = $('#borrar2').hidden = !im; marca('[data-mueve]', b => b.dataset.mueve === mv); $$('[data-mueve]').forEach(b => b.disabled = sinObj);
