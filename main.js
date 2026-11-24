@@ -225,7 +225,7 @@ let raton = null, ultimo = -1e9; const lam = { x: .6, y: .5 };
 addEventListener('pointermove', e => { if (e.pointerType === 'touch') return; raton = [e.clientX, e.clientY]; ultimo = performance.now(); pide(); });
 // En pantallas táctiles: si el dedo cae sobre el orbe, lo arrastra y la página no se mueve.
 // Si cae en cualquier otro sitio, el desplazamiento es el normal.
-let sujeto = null, radio = .06;
+let hondo = scrollY, sujeto = null, radio = .06;
 const enOrbe = t => cv.orbe && Math.hypot(t.clientX - cv.orbe.x, t.clientY - cv.orbe.y) < 58;
 const lleva = t => { raton = [t.clientX, t.clientY]; ultimo = performance.now(); pide(); };
 document.addEventListener('touchstart', e => {
@@ -243,11 +243,22 @@ for (const ev of ['touchend', 'touchcancel']) document.addEventListener(ev, e =>
   for (const t of e.changedTouches) if (t.identifier === sujeto) { sujeto = null; ultimo = performance.now(); pide(); }
 });
 const secs = $$('section');
+// La obra cambia en cuanto se empieza a entrar en la siguiente, según hacia dónde se va
+let rumbo = 1, yAnt = scrollY;
+addEventListener('scroll', () => { if (scrollY !== yAnt) rumbo = scrollY > yAnt ? 1 : -1; yAnt = scrollY; }, { passive: true });
 function estado() {
-  const m = innerHeight / 2; let idx = 0;
+  const m = innerHeight * (rumbo > 0 ? .88 : .12); let idx = 0;
   secs.forEach((s, i) => { if (s.getBoundingClientRect().top <= m) idx = i; });
   return { act: secs[idx], idx };
 }
+// El texto no se desplaza: el de la obra anterior se desvanece y aparece el nuevo
+let textoAct = null;
+function ponTexto(sec) {
+  if (sec === textoAct) return;
+  textoAct = sec;
+  secs.forEach(s => s.classList.toggle('activa', s === sec));
+}
+addEventListener('focusin', e => { const s = e.target.closest('section'); if (s && s !== textoAct) s.scrollIntoView(); });
 const fondo = [...FONDOS.criaturas];
 const nav = $$('#familias a'); let famAnt = null;
 // Devuelve el programa, o null mientras la GPU lo compila
@@ -259,7 +270,7 @@ function toma(c) {
   try { return c.prog = termina(p); } catch (e) { console.error(c.id, e.message); return c.prog = vacio; }
 }
 // Metamorfosis: va por tiempo, así se ve igual al desplazarse que al saltar con un enlace
-const DURA = 1.25;
+const DURA = .7;
 // Salto: solo si se presiona la criatura, y como mucho uno cada ESPERA segundos
 const ESPERA = 3;
 let golpe = -9;
@@ -343,7 +354,7 @@ function rotaPortada(act, ms) {
   if (ms > cambio && toma(proxima)) { ponPortada(proxima); proxima = null; cambio = 0; }
 }
 function cuadro(ms) {
-  pedido = false; const { act, idx } = estado();
+  pedido = false; const { act, idx } = estado(); ponTexto(act);
   const fam = act.dataset.f || '';
   if (fam !== famAnt) { famAnt = fam; ponUrl(); nav.forEach(n => (n.dataset.f || '') === fam ? n.setAttribute('aria-current', 'true') : n.removeAttribute('aria-current')); }
   if (!gl || !cols) return;
@@ -377,7 +388,7 @@ function cuadro(ms) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, capas[2].fb); gl.useProgram(mez.pr); const z = mez.us;
   for (const i of [0, 1]) { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, capas[i].tex); }
   gl.uniform1i(z.A, 0); gl.uniform1i(z.B, 1); gl.uniform2f(z.res, cols, filas); gl.uniform2f(z.lampara, lam.x, lam.y); gl.uniform2f(z.centro, cx, cy);
-  gl.uniform1f(z.k, hacia ? Math.max(.0001, avance) : 0); gl.uniform1f(z.sentido, sentido); gl.uniform1f(z.inv, inv); gl.uniform1f(z.tiempo, t); gl.uniform1f(z.aspecto, asp); gl.uniform1f(z.esc, es); gl.uniform1f(z.hondo, scrollY); gl.uniform1f(z.orbe, radio);
+  gl.uniform1f(z.k, hacia ? Math.max(.0001, avance) : 0); gl.uniform1f(z.sentido, sentido); gl.uniform1f(z.inv, inv); gl.uniform1f(z.tiempo, t); gl.uniform1f(z.aspecto, asp); gl.uniform1f(z.esc, es); gl.uniform1f(z.hondo, hondo += (scrollY - hondo) * .1); gl.uniform1f(z.orbe, radio);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, cv.width, cv.height); gl.useProgram(fin.pr); const f = fin.us;
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, letras); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, capas[2].tex);
@@ -400,10 +411,10 @@ function encaja() {
   if (!sig) return;
   const arriba = sig.getBoundingClientRect().top, entra = dir >= 0 ? vh - arriba : arriba;
   const baja = dir >= 0 ? entra > vh * .05 : entra <= vh * .05;
-  scrollTo({ top: Math.round(y + (baja ? arriba : arriba - vh)), behavior: quieto ? 'auto' : 'smooth' });
+  scrollTo({ top: Math.round(y + (baja ? arriba : arriba - vh)), behavior: 'instant' });
 }
 const programa = ms => { clearTimeout(espera); espera = setTimeout(encaja, ms); };
-addEventListener('scroll', () => programa(160), { passive: true });
+addEventListener('scroll', () => programa(110), { passive: true });
 addEventListener('touchstart', () => { dedo = true; clearTimeout(espera); }, { passive: true });
 for (const ev of ['touchend', 'touchcancel']) addEventListener(ev, e => { dedo = e.touches.length > 0; if (!dedo) programa(180); }, { passive: true });
 if (gl) {

@@ -29,3 +29,9 @@ section p,h2{text-shadow:0 0 10px var(--abismo),0 0 4px var(--abismo)}
 .indice summary{display:flex;justify-content:space-between;align-items:baseline;padding:9px 2px;cursor:pointer;list-style:none;font-stretch:75%;font-weight:800;font-size:clamp(1.3rem,min(2.4vw,5vh),2.1rem);line-height:1.1}
 .indice summary::-webkit-details-marker{display:none}.indice summary span{font:500 .8rem var(--mono);color:var(--bruma)}.indice summary:hover,.indice details[open] summary{color:var(--ambar)}
 .indice ul{columns:2;column-gap:18px;padding:0 2px 12px}.indice li{break-inside:avoid}
+:root{--margen:clamp(16px,4.5vw,88px)}
+section{height:100vh;height:100svh}
+.caja{position:fixed;top:0;left:var(--margen);max-height:100vh;max-height:100svh;overflow-y:auto;scrollbar-width:none;opacity:0;pointer-events:none;transform:translateY(14px);filter:blur(5px);transition:opacity .14s ease-in,transform .14s ease-in,filter .14s ease-in}
+.activa>.caja{opacity:1;pointer-events:auto;transform:none;filter:none;transition:opacity .3s ease-out .13s,transform .3s ease-out .13s,filter .3s ease-out .13s}
+@media(max-aspect-ratio:1/1){.caja,.portada .caja,.indice .caja{width:calc(100% - 2*var(--margen))}}
+@media(prefers-reduced-motion:reduce){.caja,.activa>.caja{transform:none;filter:none;transition:none}}
