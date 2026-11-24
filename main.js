@@ -64,6 +64,20 @@ vec4 notas(vec3 p){vec4 c=vec4(0,0,0,9);if(tq>2.6)return c;
   float z=acc*(1.-.5*u),d=min(elipse(q,vec3(.055,.042,.03)),capsula(q,vec3(.045,0,0),vec3(.045,.2,0),.011));d=min(d,capsula(q,vec3(.045,.2,0),vec3(.1,.13,0),.013));
   c=une(c,vec4(vec3(1.6,1.2,.6),d+.06*(1.-z)));}
  return c;}
+float craneo(vec3 k){return funde(elipse(k-vec3(0,.1,-.05),vec3(.98,.95,.95)),elipse(k-vec3(0,-.42,.15),vec3(.62,.48,.6)),.3);}
+float flequillo(vec3 k){float d=9.;for(int i=0;i<5;i++){float f=float(i)-2.;d=min(d,cono(k,vec3(f*.26,.82,.5),vec3(f*.36+.06,.2+.05*f*f,.98-.06*f*f),.27,.02));}return d;}
+vec3 rostro(vec3 k,vec3 piel,vec3 iris,float fiero){
+ if(k.z<.12)return piel;vec3 c=piel,ne=vec3(.05,.035,.04);
+ float ab=max(.1,1.-parpado()),s=k.x<0.?-1.:1.,x=abs(k.x)-.37,y=k.y+.04+fiero*.2*x,mx=s*clamp((lampara.x-centro.x)*.06,-.04,.04);
+ float e=length(vec2(x/.2,y/((.25-.06*fiero)*ab))),i=length(vec2((x-mx)/.13,(y+.005)/(.2*ab)));
+ c=mix(c,vec3(.92),smoothstep(1.05,.95,e));
+ if(e<1.){c=mix(c,mix(iris*.45,iris*1.25,smoothstep(.12,-.16,y)),smoothstep(1.,.9,i));c=mix(c,vec3(.01),smoothstep(.55,.45,i));
+  c=mix(c,vec3(1.3),smoothstep(1.1,.8,length(vec2((x-mx+s*.045)/.045,(y-.075)/.055)))*step(.4,ab));}
+ c=mix(c,ne,smoothstep(.17,.08,abs(e-1.07))*smoothstep(-.02,.06,y));
+ c=mix(c,ne,smoothstep(.06,.035,abs(k.y-.42+fiero*.5*x))*step(abs(x),.2));
+ c=mix(c,vec3(.4,.13,.12),smoothstep(.045,.02,abs(k.y+.52-.3*k.x*k.x*(1.-1.6*fiero)))*step(abs(k.x),.14));
+ c=mix(c,piel*.72,smoothstep(.06,.03,length(vec2(k.x*1.2,k.y+.24))));
+ return c;}
 #line 1
 `;
 

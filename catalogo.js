@@ -17,11 +17,12 @@ window.GRUPOS = [
   { id: 'maquinas', nombre: 'Máquinas' },
   { id: 'comida', nombre: 'Comida' },
   { id: 'formas', nombre: 'Formas' },
-  { id: 'criaturas', nombre: 'Criaturas' }
+  { id: 'criaturas', nombre: 'Criaturas' },
+  { id: 'leyendas', nombre: 'Leyendas' }
 ];
 // Color de fondo de cada grupo (rojo, verde y azul entre 0 y 0.1)
 window.FONDOS = {
-  espacio: [.03, .02, .07], naturaleza: [.015, .05, .035], lugares: [.02, .035, .065], objetos: [.055, .032, .015], maquinas: [.03, .034, .04], comida: [.06, .022, .022], formas: [.045, .015, .05], criaturas: [.006, .045, .085],
+  espacio: [.03, .02, .07], naturaleza: [.015, .05, .035], lugares: [.02, .035, .065], objetos: [.055, .032, .015], maquinas: [.03, .034, .04], comida: [.06, .022, .022], formas: [.045, .015, .05], leyendas: [.06, .018, .03], criaturas: [.006, .045, .085],
   reales: [.006, .045, .085], fauna: [.04, .022, .09], monstruos: [.06, .016, .02], mitos: [.065, .04, .012]
 };
 window.OBRAS = [
@@ -236,5 +237,25 @@ window.OBRAS = [
   { id: 'aspido', grupo: 'criaturas', fondo: 'mitos', titulo: 'Aspidoquelonio', dato: '<i>Physiologus</i> y bestiarios medievales',
     texto: 'Unas veces ballena y otras tortuga. Los marineros confunden su lomo con una isla, desembarcan y se hunden con él.' },
   { id: 'golem', grupo: 'criaturas', fondo: 'mitos', titulo: 'Gólem de Praga', dato: 'Leyenda judía, difundida en el siglo XIX',
-    texto: 'El rabino Loew lo modeló con barro del Moldava. En su frente decía <i>emet</i>, verdad. Al borrar la primera letra quedaba <i>met</i>, muerte, y se detenía.' }
+    texto: 'El rabino Loew lo modeló con barro del Moldava. En su frente decía <i>emet</i>, verdad. Al borrar la primera letra quedaba <i>met</i>, muerte, y se detenía.' },
+  { id: 'wukong', grupo: 'leyendas', ancho: 1.2, titulo: 'Sun Wukong', dato: 'China, <i>Viaje al Oeste</i>',
+    texto: 'El Rey Mono. Su bastón cambia de tamaño a voluntad y viaja sobre una nube. También es muy querido en Japón, donde se llama Son Gokū.' },
+  { id: 'momotaro', grupo: 'leyendas', ancho: 1.2, titulo: 'Momotarō', dato: 'Japón, el niño melocotón',
+    texto: 'Una pareja de ancianos abrió un melocotón que bajaba por el río y dentro había un niño. De mayor se fue a la isla de los ogros.' },
+  { id: 'kaguya', grupo: 'leyendas', ancho: 1.2, titulo: 'Princesa Kaguya', dato: 'Japón, <i>El cuento del cortador de bambú</i>',
+    texto: 'La encontraron diminuta dentro de un bambú que brillaba. Al final tuvo que volver a la Luna.' },
+  { id: 'kitsune', grupo: 'leyendas', ancho: 1.2, titulo: 'Kitsune', dato: 'Japón, zorro de nueve colas',
+    texto: 'Con los años gana colas y poder. Con la novena, dicen, lo ve y lo oye todo.' },
+  { id: 'tengu', grupo: 'leyendas', ancho: 1.2, titulo: 'Tengu', dato: 'Japón, espíritu de la montaña',
+    texto: 'Nariz larguísima, alas y un abanico de plumas que levanta vendavales.' },
+  { id: 'oni', grupo: 'leyendas', ancho: 1.28, titulo: 'Oni', dato: 'Japón, ogro',
+    texto: 'Cuernos, piel de tigre y un garrote con púas. En febrero se le echa de casa tirándole judías.' },
+  { id: 'kappa', grupo: 'leyendas', ancho: 1.15, titulo: 'Kappa', dato: 'Japón, espíritu del río',
+    texto: 'Lleva agua en el plato de la cabeza. Es tan educado que, si le haces una reverencia, la devuelve y la derrama.' },
+  { id: 'raijin', grupo: 'leyendas', ancho: 1.25, titulo: 'Raijin', dato: 'Japón, dios del trueno',
+    texto: 'El trueno son sus tambores. Los toca con dos mazos, de pie sobre la tormenta.' },
+  { id: 'yukionna', grupo: 'leyendas', ancho: 1.2, titulo: 'Yuki-onna', dato: 'Japón, la mujer de las nieves',
+    texto: 'Aparece en las noches de ventisca. Su aliento congela.' },
+  { id: 'jiraiya', grupo: 'leyendas', ancho: 1.2, titulo: 'Jiraiya', dato: 'Japón, héroe del periodo Edo',
+    texto: 'Un bandido noble que aprendió la magia de los sapos y cabalga sobre uno gigante.' }
 ];

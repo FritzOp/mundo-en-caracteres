@@ -7,6 +7,9 @@ const ida = k => Math.sin(Math.PI * k), sua = k => k * k * (3 - 2 * k), PI = Mat
 const sale = (k, n) => k < .5 ? n * Math.pow(k * 2, 2.2) : -n * Math.pow((1 - k) * 2, 2.2);   // se va por un lado y vuelve por el otro
 const vuelta = k => 2 * PI * sua(k);
 window.GESTOS = {
+  // leyendas
+  wukong: { dur: 2.8, mov: k => [0, .2 * ida(k), 0] }, momotaro: { dur: 3 }, kaguya: { dur: 3.4, mov: k => [0, .12 * ida(k), 0] }, kitsune: { dur: 3 }, tengu: { dur: 3 }, oni: { dur: 2.8, sacude: .014 },
+  kappa: { dur: 2.8 }, raijin: { dur: 3, sacude: .012 }, yukionna: { dur: 3.2 }, jiraiya: { dur: 2.8 },
   // tercera tanda
   luna: { dur: 3.2 }, cometa: { dur: 2.8, sacude: .01 }, galaxia: { dur: 3 }, palmera: { dur: 3 }, cascada: { dur: 3.2 }, cristales: { dur: 3 }, copo: { dur: 3 },
   torii: { dur: 3 }, puente: { dur: 3 }, iglu: { dur: 3.2 }, moai: { dur: 2.8 }, gramofono: { dur: 2.8 }, espada: { dur: 3.2, sacude: .008 }, farol: { dur: 3.2 }, reloj: { dur: 2.8 }, corona: { dur: 2.8 }, televisor: { dur: 3 },
