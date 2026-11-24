@@ -74,7 +74,7 @@ class MotorAscii {
   }
   ponModelo(mo) { this._vacia(); this.tipo = 'modelo'; this.marco = false; this.prop = 1; this.eje = mo.eje || [1, 0, 0]; mo.partes.forEach(p => this._parte(p)); }
   mide() {
-    const gl = this.gl, c = this.lienzo, d = Math.min(devicePixelRatio || 1, 2), W = Math.max(2, Math.round(c.clientWidth * d)), H = Math.max(2, Math.round(c.clientHeight * d));
+    const gl = this.gl, c = this.lienzo, d = Math.min(devicePixelRatio || 1, this.techo || 2), W = Math.max(2, Math.round(c.clientWidth * d)), H = Math.max(2, Math.round(c.clientHeight * d));
     const cols = Math.round(this.S.columnas), cw = W / cols, ch = cw * 1.75, filas = Math.max(2, Math.round(H / ch));
     const clave = [W, H, cols, filas, this.S.rampa, this.S.propia].join('|'); if (clave === this.clave) return; this.clave = clave;
     c.width = W; c.height = H; this.cols = cols; this.filas = filas; this.cw = W / cols; this.ch = H / filas;

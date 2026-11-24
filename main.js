@@ -242,10 +242,17 @@ function atlas() {
   gl.bindTexture(gl.TEXTURE_2D, letras); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, a); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); filtro();
 }
+// si el aparato no llega a 45 cuadros por segundo, se dibuja con letras algo mayores en vez de ir a tirones
+let calidad = 1, lento = 0, nCuadros = 0, previo = 0, lugHasta = 0, lug = null, lugAct = null;
+function vigila(ms, ocupado) {
+  const dt = ms - previo; previo = ms; if (ocupado || dt > 120) { lento = nCuadros = 0; return; }
+  nCuadros++; if (dt > 22.5) lento++;
+  if (nCuadros >= 90) { if (lento > 55 && calidad < 1.6) { calidad += .2; mide(); } lento = nCuadros = 0; }
+}
 function mide() {
   const dpr = Math.min(devicePixelRatio || 1, 1.5); W = cv.clientWidth; H = cv.clientHeight; if (!W || !H) return;
   cv.width = W * dpr; cv.height = H * dpr;
-  cw = Math.round((W < 800 ? 4 : 5) * dpr); ch = Math.round((W < 800 ? 7 : 8) * dpr);
+  cw = Math.round((W < 800 ? 4 : 5) * dpr * calidad); ch = Math.round((W < 800 ? 7 : 8) * dpr * calidad); lugHasta = performance.now() + 700;
   cols = Math.ceil(cv.width / cw); filas = Math.ceil(cv.height / ch);
   for (const { tex, fb } of capas) {
     gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, cols, filas, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); filtro();
@@ -300,12 +307,13 @@ function ponTexto(sec) {
   document.body.classList.toggle('en-inicio', k < 0);
   cuenta.textContent = k < 0 ? '' : (k + 1) + ' / ' + obrasSec.length;
   barra.style.transform = 'scaleY(' + (pag / (secs.length - 1)) + ')';
+  if (window.Anim) Anim.entra(sec);
   mideTexto();
 }
 const obrasSec = secs.filter(s => s.dataset.f), cuenta = $('#cuenta'), barra = $('#avance i');
 // solo se desplaza por dentro el texto que no cabe
 const mideTexto = () => { const k = textoAct && $('.caja', textoAct); if (k) k.classList.toggle('desborda', k.scrollHeight > k.clientHeight + 2); };
-document.addEventListener('toggle', () => { mideTexto(); pide(); }, true);
+document.addEventListener('toggle', () => { lugHasta = performance.now() + 900; mideTexto(); pide(); }, true);
 addEventListener('resize', mideTexto);
 addEventListener('focusin', e => { const i = secs.indexOf(e.target.closest('section')); if (i >= 0) ir(i); });
 // ¿el texto bajo el dedo o el cursor todavía puede moverse en esa dirección?
@@ -556,7 +564,10 @@ function cuadro(ms) {
   if (fam !== famAnt) { famAnt = fam; ponNav(); nav.forEach(n => (n.dataset.f || '') === fam ? n.setAttribute('aria-current', 'true') : n.removeAttribute('aria-current')); }
   if (!gl || !cols) return;
   const t = quieto ? 1 : ms / 1000, asp = W / H;
-  const lug = escenario(act, asp), paso = quieto || !esc.ok ? 1 : .07;
+  // medir el texto obliga al navegador a recalcular la página: solo cuando ha podido cambiar
+  if (act !== lugAct) { lugAct = act; lugHasta = ms + 900; } if (!lug || ms < lugHasta) lug = escenario(act, asp);
+  vigila(ms, !!hacia || document.body.classList.contains('cargando') || orden.some(o => o.pend && !listo(o.pend)));
+  const paso = quieto || !esc.ok ? 1 : .07;
   for (const p of ['x', 'y', 'r']) esc[p] += (lug[p] - esc[p]) * paso;
   esc.ok = true;
   const cx = esc.x, cy = esc.y, es = esc.r;

@@ -1,6 +1,7 @@
 // Generador: convierte imágenes y modelos en dibujos ASCII animados. Sin servidor: lee, guarda y
 // descarga todo desde el navegador. Los textos del usuario se escriben siempre con textContent.
 (() => {
+const A = window.Anim || new Proxy({}, { get: () => () => () => {} });
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const lienzo = $('#lienzo'); let motor;
@@ -117,7 +118,7 @@ async function muestra(nuevo) {
 }
 const LIM = 30e6, inicial = () => MotorAscii.ajustes({ columnas: Math.max(88, Math.min(210, Math.round(lienzo.clientWidth / 5.4 / 2) * 2)) });
 async function abreArchivo(f) {
-  if (!f) return; const e = Modelos.ext(f.name);
+  if (!f) return; const e = Modelos.ext(f.name), quita = A.letras($('#escena')), t0 = performance.now();
   try {
     await suelta(); if (e === 'json' || e === 'mundo') { await importa(f); return; }
     avisa('Leyendo ' + f.name.slice(0, 60) + '…');
@@ -132,6 +133,7 @@ async function abreArchivo(f) {
     } else throw Error(e === 'gltf' || e === 'fbx' || e === 'blend' ? 'Los .' + e + ' no se pueden leer. Expórtalo como GLB.' : 'Ese tipo de archivo no se puede leer.');
     await muestra(true); await guarda(); avisa('Listo. Guardado en «Tus dibujos».');
   } catch (x) { avisa(x && x.message ? x.message : 'No se pudo abrir el archivo.', true); }
+  finally { setTimeout(quita, Math.max(0, 650 - (performance.now() - t0))); }
 }
 function aSrc(c) { const w = c.toDataURL('image/webp', .9); return w.startsWith('data:image/webp') ? w : c.toDataURL('image/png'); }
 
@@ -190,7 +192,7 @@ function pintaPanel() {
   $('#contextoOn').closest('label').hidden = !im; bRel.hidden = bNit.hidden = !im; bAtras.hidden = sinObj || S.mueve !== 'objeto'; $('#cPropia').hidden = S.rampa !== 'propia'; $('#fondoBase').disabled = S.fondo.toLowerCase() === b0.fondo; $('#cTinte').hidden = S.color !== 'propio'; barras.forEach(f => f()); pintaSalida();
 }
 // pestañas
-const tabs = $$('[role=tab]'); const pestana = (t, foco) => { tabs.forEach(b => { const si = b === t; b.setAttribute('aria-selected', si); b.tabIndex = si ? 0 : -1; $('#' + b.getAttribute('aria-controls')).hidden = !si; }); $('.hojas').scrollTop = 0; if (foco) t.focus(); try { sessionStorage.setItem('pestana', t.id); } catch (e) {} const p = $('#panel').getBoundingClientRect(), y = $('.tabs').getBoundingClientRect(), es = $('#escena'); if (getComputedStyle(es).position === 'sticky' && $('.hojas').getBoundingClientRect().top < y.bottom - 2) scrollBy(0, $('.hojas').getBoundingClientRect().top - y.bottom); };
+const tabs = $$('[role=tab]'); const pestana = (t, foco) => { tabs.forEach(b => { const si = b === t; b.setAttribute('aria-selected', si); b.tabIndex = si ? 0 : -1; const h = $('#' + b.getAttribute('aria-controls')), abre = si && h.hidden; h.hidden = !si; if (abre) A.escalona(h.children); }); $('.hojas').scrollTop = 0; if (foco) t.focus(); try { sessionStorage.setItem('pestana', t.id); } catch (e) {} const p = $('#panel').getBoundingClientRect(), y = $('.tabs').getBoundingClientRect(), es = $('#escena'); if (getComputedStyle(es).position === 'sticky' && $('.hojas').getBoundingClientRect().top < y.bottom - 2) scrollBy(0, $('.hojas').getBoundingClientRect().top - y.bottom); };
 tabs.forEach((t, i) => { t.addEventListener('click', () => pestana(t)); t.addEventListener('keydown', e => { const k = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key]; if (k !== undefined) { e.preventDefault(); pestana(tabs[(k + tabs.length) % tabs.length], true); } }); });
 try { const t = document.getElementById(sessionStorage.getItem('pestana') || ''); if (tabs.includes(t)) pestana(t); } catch (e) {}
 // deshacer y rehacer
@@ -224,9 +226,9 @@ $('#elegir').addEventListener('click', () => { $('#archivo').accept = 'image/png
 $('#recupera').addEventListener('click', () => { $('#archivo').accept = '.json'; $('#archivo').click(); });
 $('#archivo').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; abreArchivo(f); });
 $('#nuevo').addEventListener('click', async () => { await suelta(); ejemplo(); });
-let hondo = 0;
-addEventListener('dragenter', e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { hondo++; $('#soltar').hidden = false; } }); addEventListener('dragleave', () => { if (--hondo <= 0) { hondo = 0; $('#soltar').hidden = true; } }); addEventListener('dragover', e => e.preventDefault());
-addEventListener('drop', e => { e.preventDefault(); hondo = 0; $('#soltar').hidden = true; const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) abreArchivo(f); });
+let hondo = 0, quitaLetras = () => {};
+addEventListener('dragenter', e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { hondo++; if ($('#soltar').hidden) { quitaLetras(); quitaLetras = A.letras($('#soltar')); } $('#soltar').hidden = false; } }); addEventListener('dragleave', () => { if (--hondo <= 0) { hondo = 0; $('#soltar').hidden = true; quitaLetras(); } }); addEventListener('dragover', e => e.preventDefault());
+addEventListener('drop', e => { e.preventDefault(); hondo = 0; $('#soltar').hidden = true; quitaLetras(); const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) abreArchivo(f); });
 addEventListener('paste', e => { const f = [...(e.clipboardData ? e.clipboardData.files : [])][0]; if (f) abreArchivo(f); });
 
 // ---------- pincel: corregir qué es objeto y qué es fondo ----------
@@ -397,7 +399,7 @@ $('#dCopia').addEventListener('click', async () => { try { await navigator.clipb
 function abreVentana(t) { dd.classList.remove('hecho', 'mal'); $('#dTit').textContent = t; $('#dTxt').textContent = ''; $('#dBarra').hidden = false; $('#dGuardar').textContent = 'Guardar archivo'; $('#dGuardar').classList.add('lleno'); $('#dVolver').textContent = 'Cancelar'; ve([]); barraTxt(0); if (!dd.open) dd.showModal(); }
 async function descarga(k) {
   deLista = k === "copia"; const [que, ext, hace] = FORMATOS[k], yo = ++turno, vivo = () => yo === turno && dd.open; clearTimeout(cierra); $('#dVista').textContent = ''; $('#dVista').classList.remove('cuadros'); motor.cuadro(performance.now()); abreVentana((k === 'video' ? 'Grabando ' : 'Preparando ') + que); $('#dTxt').textContent = k === 'video' ? 'Tarda 6 segundos. No cambies de aplicación.' : 'Un momento…';
-  const im = new Image(); im.alt = ''; im.src = mini(); $('#dVista').append(im); const t0 = performance.now();
+  const im = new Image(); im.alt = ''; im.src = mini(); $('#dVista').append(im); const quita = A.letras($('#dVista')), t0 = performance.now(); A.descifra($('#dTit'), 600);
   const av = async v => { if (vivo()) barraTxt(Math.min(.97, v)); await respira_(); };
   try {
     await respira_(); const blob = await hace(av, vivo); if (!vivo() || !blob) return; while (performance.now() - t0 < 700) { if (!vivo()) return; barraTxt(Math.min(.99, Math.max(.3, (performance.now() - t0) / 700))); await respira_(); } if (!vivo()) return; barraTxt(1);
@@ -407,7 +409,7 @@ async function descarga(k) {
     ve(['dGuardar'].concat(comoArchivo(ultimo) ? ['dComp'] : [], k === 'txt' ? ['dCopia'] : []));
     if (tactil) { $('#dTit').textContent = 'Archivo listo'; $('#dTxt').textContent = ultimo.nombre + ' · ' + peso(blob.size) + (k === 'png' ? '. También puedes mantener pulsada la imagen para guardarla.' : '.') + (dentroDeApp ? ' Estás en el navegador de otra aplicación: si no se guarda, abre esta página en Chrome o Safari.' : ''); $('#dVolver').textContent = 'Volver a descargas'; $('#dGuardar').focus(); }
     else { baja(blob, ultimo.nombre); entregado(ultimo.nombre + ' · ' + peso(blob.size) + '. ' + avisoGuardado()); }
-  } catch (x) { if (!vivo()) return; dd.classList.add('mal'); $('#dTit').textContent = 'No se pudo descargar'; $('#dBarra').hidden = true; $('#dTxt').textContent = x.message || 'Algo falló.'; ve([]); $('#dVolver').textContent = 'Volver a descargas'; }
+  } catch (x) { if (!vivo()) return; dd.classList.add('mal'); $('#dTit').textContent = 'No se pudo descargar'; $('#dBarra').hidden = true; $('#dTxt').textContent = x.message || 'Algo falló.'; ve([]); $('#dVolver').textContent = 'Volver a descargas'; } finally { quita(); }
 }
 $$('[data-baja]').forEach(b => b.addEventListener('click', () => descarga(b.dataset.baja))); $('#copia').addEventListener('click', () => descarga('copia'));
 // importa un proyecto o una copia; se revisa todo antes de aceptarlo
@@ -434,8 +436,16 @@ MotorAscii.gestos(motor, () => { barras.forEach(f => f()); cambio(); }, { libre:
 document.addEventListener('gesturestart', e => e.preventDefault());
 lienzo.addEventListener('keydown', e => { const k = { ArrowLeft: -.15, ArrowRight: .15 }[e.key]; if (k && libre) { motor.S.giroY += k; e.preventDefault(); cambio(); } else if (e.key === 'Enter') motor.toca(performance.now()); else if (e.key === ' ') { e.preventDefault(); ponPausa(!motor.pausa); } });
 let visible = true; document.addEventListener('visibilitychange', () => visible = !document.hidden);
-const bucle = ms => { if (visible && D) motor.cuadro(ms); requestAnimationFrame(bucle); };
+// no se dibuja lo que no se ve, y si el aparato va justo se baja un poco la resolución
+let enVista = true; if (window.IntersectionObserver) new IntersectionObserver(l => enVista = l[l.length - 1].isIntersecting).observe($('#escena'));
+let previo = 0, lento = 0, vistos = 0;
+const bucle = ms => {
+  requestAnimationFrame(bucle); if (!visible || !D || !(enVista || motor.solo) || G || P) { previo = 0; return; } motor.cuadro(ms);
+  const dt = previo ? ms - previo : 0; previo = ms; if (!dt || dt > 120 || dd.open) return; vistos++; if (dt > 22.5) lento++;
+  if (vistos >= 90) { const t = Math.min(devicePixelRatio || 1, motor.techo || 2); if (lento > 55 && t > 1) motor.techo = Math.max(1, t - .35); lento = vistos = 0; }
+};
 // si el móvil quita la gráfica, se monta otra vez el mismo dibujo
 lienzo.addEventListener('webglcontextlost', e => e.preventDefault()); lienzo.addEventListener('webglcontextrestored', async () => { try { motor._arma(); motor.rk = ''; if (D) await muestra(false); } catch (e) { avisa('Recarga la página para ver el dibujo.', true); } });
-(async () => { try { let g = null; try { const id = localStorage.getItem('ultimo'); g = id && await tx('readonly', s => s.get(id)); } catch (e) {} try { if (g) await restaura(g); } catch (e) { g = null; } if (!g) await ejemplo(); } catch (e) { avisa(e.message, true); } requestAnimationFrame(bucle); lista(); })();
+(async () => { try { let g = null; try { const id = localStorage.getItem('ultimo'); g = id && await tx('readonly', s => s.get(id)); } catch (e) {} try { if (g) await restaura(g); } catch (e) { g = null; } if (!g) await ejemplo(); } catch (e) { avisa(e.message, true); } requestAnimationFrame(bucle); await lista(); A.escalona($$('#lista li')); })();
+A.descifra($('h1'), 620); A.escalona($('#p-estilo').children, 120); A.escalona($$('#barraEscena button'), 200);
 })();

@@ -1,0 +1,21 @@
+/* Animaciones adaptadas de React Bits (reactbits.dev). Ver LICENCIA-REACT-BITS.txt */
+.an-pal{display:inline-block;white-space:nowrap}.an-cel{position:relative;display:inline-block}.an-fan{visibility:hidden}.an-fan.ya{visibility:visible}.an-gli{position:absolute;top:0;left:50%;transform:translateX(-50%);color:var(--ambar);opacity:.75}
+.an-chispas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:30}
+.an-letras{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.38;-webkit-mask-image:radial-gradient(ellipse at center,#000 25%,#0000 78%);mask-image:radial-gradient(ellipse at center,#000 25%,#0000 78%)}
+#escena>.an-letras{z-index:1;opacity:.5}#dVista{position:relative}#dVista .an-letras{opacity:.55;mix-blend-mode:screen;-webkit-mask-image:none;mask-image:none}
+.boton,#elegir{transition:translate .25s cubic-bezier(.22,1,.36,1),background-color .15s,border-color .15s,color .15s}
+/* StarBorder: una luz recorre el borde del botón principal */
+@property --an-ang{syntax:"<angle>";inherits:false;initial-value:0deg}
+.boton.lleno,#elegir,#dGuardar.lleno{position:relative}
+.boton.lleno::before,#elegir::before,#dGuardar.lleno::before{content:"";position:absolute;inset:-5px;padding:2px;pointer-events:none;background:conic-gradient(from var(--an-ang),#0000 0 62%,#7fe8dd 80%,#fff6e6 88%,#ffb14a 94%,#0000);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);animation:an-gira 4.5s linear infinite}
+@keyframes an-gira{to{--an-ang:360deg}}
+/* SpotlightCard */
+@media(hover:hover) and (pointer:fine){
+.carta:hover,.color:hover,[data-baja]:hover,.compartir:hover,.donde button:hover,.chips button:hover,.dos button:hover{background-image:radial-gradient(130px circle at var(--mx,50%) var(--my,50%),#ffb14a3d,#0000 72%)}
+#lista .ver{position:relative;overflow:hidden}#lista .ver::after{content:"";position:absolute;inset:0;opacity:0;transition:opacity .2s;background:radial-gradient(150px circle at var(--mx,50%) var(--my,50%),#ffffff3d,#0000 70%)}#lista .ver:hover::after{opacity:1}}
+@media(prefers-reduced-motion:reduce){.boton.lleno::before,#elegir::before,#dGuardar.lleno::before{animation:none;display:none}.boton,#elegir{transition:none}}
+/* paso fluido entre la galería y el generador */
+@media(prefers-reduced-motion:no-preference){@view-transition{navigation:auto}
+::view-transition-old(root){animation:an-sale .22s ease-in both}::view-transition-new(root){animation:an-llega .34s cubic-bezier(.22,1,.36,1) both}}
+@keyframes an-sale{to{opacity:0;transform:scale(.985)}}@keyframes an-llega{from{opacity:0;transform:translateY(14px)}}
+@media(pointer:coarse){.caja{filter:none!important}}
