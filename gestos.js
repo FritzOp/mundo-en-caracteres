@@ -7,6 +7,12 @@ const ida = k => Math.sin(Math.PI * k), sua = k => k * k * (3 - 2 * k), PI = Mat
 const sale = (k, n) => k < .5 ? n * Math.pow(k * 2, 2.2) : -n * Math.pow((1 - k) * 2, 2.2);   // se va por un lado y vuelve por el otro
 const vuelta = k => 2 * PI * sua(k);
 window.GESTOS = {
+  // tercera tanda
+  luna: { dur: 3.2 }, cometa: { dur: 2.8, sacude: .01 }, galaxia: { dur: 3 }, palmera: { dur: 3 }, cascada: { dur: 3.2 }, cristales: { dur: 3 }, copo: { dur: 3 },
+  torii: { dur: 3 }, puente: { dur: 3 }, iglu: { dur: 3.2 }, moai: { dur: 2.8 }, gramofono: { dur: 2.8 }, espada: { dur: 3.2, sacude: .008 }, farol: { dur: 3.2 }, reloj: { dur: 2.8 }, corona: { dur: 2.8 }, televisor: { dur: 3 },
+  helicoptero: { dur: 3.4, mov: k => [-.15 * ida(k), .3 * ida(k), 0] }, bicicleta: { dur: 2.8, mov: k => [.1 * ida(k), .12 * ida(k), 0] },
+  pizza: { dur: 3.2 }, pina: { dur: 3 }, cupcake: { dur: 3 }, ramen: { dur: 3.2 }, icosaedro: { dur: 3 }, metabolas: { dur: 3.2 }, adn: { dur: 3.2 },
+  elefante: { dur: 3 }, tortuga: { dur: 3 }, abeja: { dur: 3, mov: (k, s) => [.25 * Math.sin(s * 4) * ida(k), .2 * Math.sin(s * 8) * ida(k), 0] }, rana: { dur: 2.6 }, unicornio: { dur: 3 },
   // espacio
   saturno: { giro: vuelta }, tierra: { giro: vuelta }, sol: { sacude: .012 }, agujero: {},
   astronauta: { mov: (k, s) => [0, .1 * ida(k), 0] }, cohete: { dur: 3, mov: k => [sale(k, .9), sale(k, 3.4), 0], sacude: .015 },
