@@ -37,12 +37,14 @@ vec4 criatura(vec3 p, float t) {
   for (int i = 0; i < 12; i++) {
     float f = float(i), g = f * 2.4;
     vec3 ini = vec3(.05 + .16 * cos(g), -.2, .24 * sin(g));
-    float L = .5 + .16 * sin(f * 5.);
+    float L = (.5 + .16 * sin(f * 5.)) * (1. - .65 * acc);
     vec3 fin = ini + vec3(-.12 + .2 * cos(g) + .05 * sin(t * 1.6 + f), -L, .18 * sin(g));
     vec3 med = ini + vec3(.16 * sin(f * 3. + t), -L * .5, .1 * sin(g));
     c = une(c, vec4(mix(vec3(.75, .5, .4), HUESO, .3 + .3 * sin(q.y * 60.)), curva(q, ini, med, fin, .045, .014) * .7));
   }
-  return c;
+  vec4 fin_ = c;
+  if (tq < 2.6) for (int i = 0; i < 5; i++) { float g = float(i), u = fract(tq * 1.1 + g * .2); fin_ = une(fin_, vec4(vec3(.55, .75, .85), esfera(p - vec3(-.75 + .1 * sin(g * 3.), -.45 - .9 * u, .12 * cos(g * 2.4)), .05 * acc * (1. - .5 * u)))); }
+  return fin_;
 }` },
 { id:'sifonoforo', archivo:'sifonoforo.glsl', metros:700, codigo:
 `// Una colonia. Cada campana es un individuo.
@@ -58,7 +60,7 @@ vec4 criatura(vec3 p, float t) {
   float n = clamp(round(p.y / paso), -7., 8.);
   p.y -= n * paso;
   p.xz *= gira(n * 2.4);
-  float pulso = pow(.5 + .5 * sin(n * .7 - t * 3.), 3.);
+  float pulso = max(pow(.5 + .5 * sin(n * .7 - t * 3.), 3.), acc * pow(.5 + .5 * sin(n * 1.3 - tq * 11.), 2.) * 1.2);
   vec3 q = abs(p) - vec3(.21, 0, 0);
   c = une(c, vec4(CIAN * (.6 + 1.3 * pulso),
                   elipse(q, vec3(.2, .078, .13)) * .7));
@@ -90,7 +92,7 @@ vec4 criatura(vec3 p, float t) {
 
   // anillo de alarma
   float n = gajo(p, 20.);
-  float luz = pow(.5 + .5 * cos(n * .628 - t * 4.), 4.);
+  float luz = pow(.5 + .5 * cos(n * .628 - t * 4.), 4.); luz = max(luz, acc * step(0., sin(tq * 20. - n * .628 * 2.)) * 1.1);
   vec3 q = ronda(p, 20.) - vec3(.9, -.04, 0);
   c = une(c, vec4(CIAN * (.5 + 1.6 * luz), esfera(q, .075)));
 
@@ -126,7 +128,7 @@ vec4 criatura(vec3 p, float t) {
   d = funde(d, br, .1);
   // orejas: pétalos cóncavos
   q = vec3(abs(p.x) - .56, p.y - .55, p.z);
-  q.xy *= gira(.45 * sin(t * 2.) + .45);
+  q.xy *= gira(mix(.45 * sin(t * 2.), .8 * sin(tq * 14.), acc) + .45);
   vec3 e = q - vec3(.3, .1, 0); e.xy *= gira(-.35);
   float ore = elipse(e, vec3(.32, .25, .11));
   ore = max(ore, -elipse(e - vec3(.02, 0, .12), vec3(.25, .18, .1)));
@@ -159,10 +161,10 @@ vec4 criatura(vec3 p, float t) {
   float d = elipse(p, vec3(ancho, 1.15, ancho)) - .045 * filo;
   d = max(d, -(length((v.xy + vec2(0, 1.08)) / vec2(.42, .55)) - 1.) * .4);
   // peines: arcoíris con dientes finos
-  vec3 arco = .5 + .5 * cos(p.y * 4.2 - t * 2.5 + vec3(0, 2.1, 4.2));
+  vec3 arco = .5 + .5 * cos(p.y * 4.2 - t * 2.5 - acc * tq * 7. + vec3(0, 2.1, 4.2));
   float diente = .65 + .35 * step(0., sin(p.y * 55.));
   float vive = smoothstep(-1., -.75, p.y) * smoothstep(1.12, .95, p.y);
-  vec3 tono = mix(vec3(.05, .1, .2), arco * 1.75 * diente, filo * vive);
+  vec3 tono = mix(vec3(.05, .1, .2), arco * (1.75 + .6 * acc) * diente, filo * vive);
   // canales interiores, como vidrio
   float y = v.y;
   float x = abs(v.x);
@@ -181,7 +183,7 @@ vec4 criatura(vec3 p, float t) {
   p.y -= .25 + .08 * sin(t * 1.5);
   p.xy *= gira(.2 * sin(t * .5));
   p.xz *= gira(.6 * sin(t * .35));
-  float abre = .78 + .16 * sin(t * 1.5);
+  float abre = .78 + .16 * sin(t * 1.5) + .24 * acc;
 
   // manto y capa, una campana hueca
   float d = elipse(p - vec3(0, .5, 0), vec3(.42, .55, .42));
@@ -197,7 +199,7 @@ vec4 criatura(vec3 p, float t) {
   vec3 q = ronda(p, 8.) - vec3(abre, -.95, 0);
   d = funde(d, capsula(q, vec3(-.02, .35, 0), vec3(.06, -.3, 0), .075), .1);
   vec4 c = vec4(mix(vec3(.45, .13, .12), vec3(.16, .13, .22), smoothstep(.3, 1., length(p.xz))), d * .6);
-  float brilla = .5 + .5 * sin(t * 2. + gajo(p, 8.));
+  float brilla = acc * step(0., sin(tq * 14. + gajo(p, 8.) * 2.)) + .5 + .5 * sin(t * 2. + gajo(p, 8.));
   c = une(c, vec4(CIAN * (1. + .9 * brilla),
                   esfera(q - vec3(.06, -.3, 0), .09)));
 
@@ -239,7 +241,7 @@ vec4 criatura(vec3 p, float t) {
     c = une(c, vec4(cal, d * .7));
     // penachos
     if (i == 1 || i == 3 || i == 6 || i == 8) {
-      float asoma = .1 * sin(t * .9 + f * 1.9);
+      float asoma = .1 * sin(t * .9 + f * 1.9) - .75 * smoothstep(0., .4, acc) * smoothstep(.1 * f * .15, .4, acc);
       for (int j = 0; j < 5; j++) {
         float g = float(j) - 2.;
         vec3 s = p - punta - dir * (asoma - .05);
@@ -272,13 +274,15 @@ vec4 criatura(vec3 p, float t) {
   float paso = .16;
   float n = clamp(round(q.x / paso), 1., 7.);
   float alto = 1.25 - n * .07;
-  q.x -= n * paso + .03 * sin(q.y * 4. + t * 2. + n);
+  q.x -= n * paso + (.03 + .04 * acc * sin(tq * 30. + n * 2.)) * sin(q.y * 4. + t * 2. + n);
   c = une(c, vec4(HUESO * .9, capsula(q, vec3(0), vec3(0, alto, 0), .024) * .8));
 
   // bolas en las puntas, encendidas por turnos
-  float luz = pow(.5 + .5 * sin(n * .9 - t * 3.), 4.);
+  float luz = max(pow(.5 + .5 * sin(n * .9 - t * 3.), 4.), acc * pow(.5 + .5 * sin(n * 1.2 - tq * 9.), 2.));
   c = une(c, vec4(AMBAR * (.9 + .9 * luz), esfera(q - vec3(0, alto, 0), .065) * .8));
-  return c;
+  vec4 fin_ = c;
+  fin_ = une(fin_, notas(p - vec3(0, .7, .3)));
+  return fin_;
 }` },
 { id:'caracol', archivo:'pez_caracol.glsl', metros:7500, codigo:
 `// Blando, sin escamas, a 750 atmósferas.
@@ -288,7 +292,7 @@ vec4 criatura(vec3 p, float t) {
   p.x += .4;
   // la ondulación crece hacia la cola
   float cola = smoothstep(-.1, 1.7, p.x);
-  p.z += .28 * cola * sin(p.x * 3. - t * 3.5);
+  p.z += (.28 + .16 * acc) * cola * sin(p.x * 3. - t * 3.5 - acc * tq * 8.);
   // cabeza ancha y cuerpo que se afila
   float d = elipse(p + vec3(.42, 0, 0), vec3(.52, .42, .44));
   d = funde(d, elipse(p - vec3(-.05, -.03, 0), vec3(.5, .37, .34)), .15);

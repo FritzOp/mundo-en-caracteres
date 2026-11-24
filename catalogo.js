@@ -121,7 +121,7 @@ window.OBRAS = [
     texto: 'Las tres luces recorren el mismo lado y, sin cruzar el borde, pasan por todas partes.' },
   { id: 'gato', grupo: 'criaturas', fondo: 'reales', titulo: 'Gato', dato: '<i>Felis catus</i>',
     texto: 'Atigrado y sentado. Te mira como si fueras tú quien está en su casa.' },
-  { id: 'tiburon', grupo: 'criaturas', fondo: 'reales', ancho: 1.3, titulo: 'Tiburón', dato: '<i>Carcharodon carcharias</i>',
+  { id: 'tiburon', grupo: 'criaturas', fondo: 'reales', ancho: 1.2, titulo: 'Tiburón', dato: '<i>Carcharodon carcharias</i>',
     texto: 'Oscuro por arriba y claro por abajo: así se pierde contra el fondo desde cualquier lado.' },
   { id: 'lechuza', grupo: 'criaturas', fondo: 'reales', titulo: 'Lechuza común', dato: '<i>Tyto alba</i>',
     texto: 'Caza a oscuras guiándose solo por el oído, con un error menor de un grado. Sus oídos son asimétricos y el disco de la cara les lleva el sonido como una antena.' },

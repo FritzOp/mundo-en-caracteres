@@ -28,7 +28,7 @@ void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.-
 // Biblioteca disponible para el código de las criaturas
 const PRE = `#version 300 es
 precision highp float;
-uniform vec2 res;uniform vec2 centro;uniform vec2 lampara;uniform float tiempo,esc,aspecto,brinco,giro;
+uniform vec2 res;uniform vec2 centro;uniform vec2 lampara;uniform float tiempo,esc,aspecto,brinco,giro,acc,tq;uniform vec3 mov;
 out vec4 sal;
 const vec3 AMBAR=vec3(1.,.62,.2),CIAN=vec3(.4,.95,.88),HUESO=vec3(.95,.9,.82),AZUL=vec3(.2,.38,.75),ROJO=vec3(.75,.2,.17);
 mat2 gira(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}
@@ -53,12 +53,24 @@ vec4 ojo(vec3 q,float r,vec3 iris,vec3 mira,vec3 parp){
  c=mix(c,vec3(1.25),smoothstep(.972,.985,dot(n,normalize(mira+vec3(-.2,.28,.05)))));
  c=mix(c,parp*.75,step(.55-1.7*parpado(),n.y));
  return vec4(c,d);}
+float vuelta(){return 6.28318*smoothstep(0.,1.,clamp(tq/2.4,0.,1.));}
+vec4 cohetes(vec3 p){vec4 c=vec4(0,0,0,9);if(tq>3.)return c;
+ for(int i=0;i<3;i++){float f=float(i),s=tq-.2-.55*f;if(s<0.||s>1.3)continue;
+  vec3 q=p-vec3(-.75+.75*f,.8+.18*sin(f*2.+1.),.35);q.y+=.22*s*s;float R=.6*sqrt(s),z=.034*(1.35-s);vec3 k=f<.5?vec3(1.8,.7,.3):f<1.5?vec3(.5,1.4,1.7):vec3(1.7,.6,1.3);
+  for(int j=0;j<3;j++){float a=(float(j)-1.)*.75;vec3 u=ronda(q,9.);c=une(c,vec4(k,esfera(u-vec3(R*cos(a),R*sin(a),0),z)));}}
+ return c;}
+vec4 notas(vec3 p){vec4 c=vec4(0,0,0,9);if(tq>2.6)return c;
+ for(int i=0;i<4;i++){float f=float(i),u=fract(tq*.6+f*.25);vec3 q=p-vec3(.35*sin(f*2.2+u*3.),u*.95,.05*f);q.xy*=gira(.3*sin(tq*4.+f));
+  float z=acc*(1.-.5*u),d=min(elipse(q,vec3(.055,.042,.03)),capsula(q,vec3(.045,0,0),vec3(.045,.2,0),.011));d=min(d,capsula(q,vec3(.045,.2,0),vec3(.1,.13,0),.013));
+  c=une(c,vec4(vec3(1.6,1.2,.6),d+.06*(1.-z)));}
+ return c;}
 #line 1
 `;
 
 // Pasada 1: raymarching, un píxel por carácter
 const POST = `
 vec4 viva(vec3 p){
+ p-=mov;
  float b=.005*sin(tiempo*1.8)+.05*brinco,y=p.y+1.1;
  p.y=(y-.16*max(brinco,0.))/(1.+b)-1.1;p.xz*=1.+.55*b;p.x+=.01*sin(tiempo*1.1)*y-.025*clamp(lampara.x-centro.x,-1.,1.)*y;
  p.xz*=gira(giro);return criatura(p,tiempo);}
@@ -411,17 +423,30 @@ addEventListener('keydown', e => {
   cambio = 0; pide();
 });
 
-// Salto: solo si se presiona la criatura, y como mucho uno cada ESPERA segundos
-const ESPERA = 3;
-let golpe = -9;
+// Toque: cada obra responde a su manera (gestos.js). No se repite hasta que termina.
+const DESCANSO = .5;
+function toca() {
+  const c = C[secs[pag].dataset.c], ahora = performance.now() / 1000, g = GESTOS[c.id] || {};
+  if (de !== c || hacia || ahora - (c.golpe || -99) < (g.dur || 2.6) + DESCANSO) return;
+  c.golpe = ahora; cambio = 0; pide();
+}
 addEventListener('click', e => {
-  const ahora = performance.now() / 1000;
-  if (ahora - finGiro < .25) return;
-  if (ahora - golpe < ESPERA || e.target.closest('a,summary,button,details')) return;
+  if (performance.now() / 1000 - finGiro < .25 || e.target.closest('a,summary,button,details')) return;
   const x = (e.clientX / W * 2 - 1) * W / H, y = 1 - e.clientY / H * 2;
-  if (Math.hypot(x - esc.x, y - esc.y) > esc.r * 1.15) return;
-  golpe = ahora; pide();
+  if (Math.hypot(x - esc.x, y - esc.y) < esc.r * 1.2) toca();
 });
+addEventListener('keydown', e => { if (e.key === 'Enter' && !(e.target.closest && e.target.closest('a,summary,button'))) toca(); });
+// Estado del gesto de una obra en este instante
+const QUIETA = { acc: 0, tq: 99, mov: [0, 0, 0], giro: 0, brinco: 0 };
+const suav = (a, b, x) => { x = limita((x - a) / (b - a), 0, 1); return x * x * (3 - 2 * x); };
+function gestoDe(c, ms) {
+  const g = c && GESTOS[c.id] || {}, dur = g.dur || 2.6, s = c ? ms / 1000 - (c.golpe || -99) : 99;
+  if (s < 0 || s > dur) return QUIETA;
+  const k = s / dur, acc = suav(0, .3, s) * (1 - suav(dur - .7, dur, s));
+  const m = !quieto && g.mov ? g.mov(k, s).slice() : [0, 0, 0];
+  if (g.sacude && !quieto) { m[0] += g.sacude * acc * Math.sin(s * 47); m[1] += g.sacude * acc * Math.sin(s * 61); }
+  return { acc, tq: s, mov: m, giro: !quieto && g.giro ? g.giro(k) : 0, brinco: c.imagen && !quieto ? Math.exp(-3 * s) * Math.sin(s * 11) : 0 };
+}
 let de = null, hacia = null, avance = 0, sentido = 1, inv = 0, antes = 0;
 const NADA = { id: 'nada' };
 let pedida = null, desde = 0;
@@ -442,7 +467,7 @@ function metamorfosis(meta, ms) {
   if (hacia) {
     // si ya hay otra esperando, acelera
     avance += dt / DURA * (meta === hacia ? 1 : 2.2);
-    if (avance >= 1) { de.giro = 0; de = hacia; hacia = null; avance = 0; }
+    if (avance >= 1) { de.giro = 0; de.golpe = -99; de = hacia; hacia = null; avance = 0; }
   }
 }
 const orden = secs.filter(s => s.dataset.f).map(s => C[s.dataset.c]);
@@ -494,7 +519,7 @@ function ponPortada(c) {
 ponPortada(saca());
 function rotaPortada(act, ms) {
   const c = C[act.dataset.c];
-  if (act.dataset.f || quieto || agarre) { cambio = 0; return; }
+  if (act.dataset.f || quieto || agarre || ms / 1000 - (c.golpe || -99) < 4) { cambio = 0; return; }
   if (!cambio || de !== c || hacia) { cambio = ms + 5000; return; }  // cuenta desde que ya se ve
   if (!proxima) proxima = saca();
   if (!proxima.prog && !proxima.pend) empieza(proxima);
@@ -523,14 +548,15 @@ function cuadro(ms) {
   }
   rotaPortada(act, ms); const c = C[act.dataset.c]; metamorfosis(c, ms);
   (FONDOS[c.fondo] || FONDOS[c.grupo] || fondo).forEach((x, i) => fondo[i] += (x - fondo[i]) * (quieto ? 1 : .05));
-  const tg = ms / 1000 - golpe, brinco = quieto || tg > 3 || tg < 0 ? 0 : Math.exp(-3 * tg) * Math.sin(tg * 11);
   if (!agarre && Math.abs(velGiro) > .0004) { c.giro = (c.giro || 0) + velGiro; velGiro *= .95; cambio = 0; }
   const dibuja = (cri, capa) => {
     const prog = cri && cri.prog || vacio, u = prog.us;
     gl.bindFramebuffer(gl.FRAMEBUFFER, capas[capa].fb); gl.useProgram(prog.pr);
     gl.uniform2f(u.res, cols, filas); gl.uniform2f(u.centro, cx, cy); gl.uniform2f(u.lampara, lam.x, lam.y);
     if (cri && cri.imagen && prog === cri.prog) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, cri.tex); gl.uniform1i(u.foto, 0); gl.uniform1f(u.prop, cri.prop); }
-    gl.uniform1f(u.tiempo, t); gl.uniform1f(u.brinco, brinco); gl.uniform1f(u.giro, cri && cri.giro || 0); gl.uniform1f(u.esc, es * 2.8); gl.uniform1f(u.aspecto, asp);
+    const g = gestoDe(cri, ms);
+    gl.uniform1f(u.tiempo, t); gl.uniform1f(u.brinco, g.brinco); gl.uniform1f(u.giro, (cri && cri.giro || 0) + g.giro);
+    gl.uniform1f(u.acc, g.acc); gl.uniform1f(u.tq, g.tq); gl.uniform3f(u.mov, ...g.mov); gl.uniform1f(u.esc, es * 2.8); gl.uniform1f(u.aspecto, asp);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   };
   gl.viewport(0, 0, cols, filas);
@@ -546,7 +572,7 @@ function cuadro(ms) {
   gl.uniform1f(f.tiempo, t); gl.uniform1i(f.img, 0); gl.uniform1i(f.letras, 1); gl.uniform2f(f.res, cv.width, cv.height); gl.uniform2f(f.celda, cw, ch); gl.uniform2f(f.rejilla, cols, filas);
   gl.uniform1f(f.n, RAMPA.length); gl.uniform3fv(f.fondo, fondo);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
-  if (!quieto || de !== c) pide();
+  if (!quieto || de !== c || ms / 1000 - (c.golpe || -99) < 4) pide();
 }
 function pide() { if (!pedido) { pedido = true; requestAnimationFrame(cuadro); } }
 if (gl) {

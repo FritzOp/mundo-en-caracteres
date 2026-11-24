@@ -14,6 +14,7 @@ CRIATURAS.push(
   vec3 v = n; v.xz *= gira(t * .06);
   float nub = sin(v.x * 5. + 2.2 * sin(v.y * 5. + v.z * 2.)) + sin(v.z * 7. + 1.6 * sin(v.x * 6.)) + .5 * sin(v.y * 19. + v.x * 13.);
   c = mix(c, vec3(.92), smoothstep(.75, 1.4, nub) * .85);
+  c += acc * tierra * step(.86, fract(sin(dot(floor(n * 26.), vec3(12.9, 78.2, 37.7))) * 4375.)) * vec3(1.7, 1.2, .5);
   vec4 r = vec4(c, esfera(p, .88) - .012 * smoothstep(.9, 1.4, nub));
   vec3 m = vec3(1.2 * cos(t * .3), .4, 1.2 * sin(t * .3));
   return une(r, vec4(vec3(.6, .58, .55), esfera(l - m, .12) + .008 * sin(l.x * 40.) * sin(l.y * 37.)));
@@ -24,7 +25,7 @@ CRIATURAS.push(
   vec3 n = p / max(length(p), .01);
   float g = sin(n.x * 11. + 2. * sin(n.y * 9. + t * .6)) * sin(n.y * 12. + 2. * sin(n.z * 8. - t * .5)) + .6 * sin(n.z * 23. + n.x * 19. + t) * sin(n.y * 25. - t * .7);
   float mancha = smoothstep(.1, .05, length(n - normalize(vec3(.5, .3, .8)))) + smoothstep(.08, .04, length(n - normalize(vec3(-.6, -.25, .7))));
-  vec3 c = mix(vec3(1.25, .38, .08), vec3(1.85, 1.25, .45), smoothstep(-.8, .9, g)) * (1. - .55 * min(mancha, 1.));
+  vec3 c = mix(vec3(1.25, .38, .08), vec3(1.85, 1.25, .45), smoothstep(-.8, .9, g)) * (1. - .55 * min(mancha, 1.)) * (1. + .25 * acc);
   vec4 r = vec4(c, (esfera(p, .8) - .02 * g) * .8);
   // protuberancias: arcos de plasma
   for (int i = 0; i < 5; i++) {
@@ -33,7 +34,7 @@ CRIATURAS.push(
     vec3 q = p - d * .8;
     vec3 u = normalize(cross(d, vec3(.3, 1., .2))), w = cross(d, u);
     vec3 s = vec3(dot(q, u), dot(q, d), dot(q, w));
-    float R = .16 + .05 * sin(t * .5 + k * 2.);
+    float R = .16 + .2 * acc * (.6 + .4 * sin(tq * 3. + k)) + .05 * sin(t * .5 + k * 2.);
     float arc = length(vec2(length(s.xy) - R, s.z)) - .022 - .008 * sin(atan(s.y, s.x) * 9. - t * 4.);
     r = une(r, vec4(vec3(1.7, .7, .18), arc * .8));
   }
@@ -49,7 +50,7 @@ CRIATURAS.push(
   // paneles
   vec3 q = vec3(abs(p.x), p.yz);
   c = une(c, vec4(vec3(.6), capsula(q, vec3(.2, 0, 0), vec3(.45, 0, 0), .03)));
-  vec3 s = q - vec3(.86, 0, 0); s.yz *= gira(.35);
+  vec3 s = q - vec3(.86, 0, 0); s.yz *= gira(.35 + 3.1416 * smoothstep(0., 1., clamp(tq / 2.2, 0., 1.)));
   float rej = max(step(.9, abs(fract(s.x * 7.) * 2. - 1.)), step(.88, abs(fract(s.y * 7.) * 2. - 1.)));
   c = une(c, vec4(mix(vec3(.06, .12, .32), vec3(.6, .62, .65), rej), caja(s, vec3(.42, .32, .012))));
   // antena parabólica
@@ -61,7 +62,10 @@ CRIATURAS.push(
   c = une(c, vec4(vec3(.5), capsula(p, vec3(0, -.3, 0), vec3(0, -.5, .08), .03)));
   c = une(c, vec4(vec3(.5), capsula(p, vec3(.12, .4, 0), vec3(.2, .8, 0), .012)));
   float luz = step(.6, sin(t * 4.));
-  return une(c, vec4(mix(vec3(.3, .05, .05), vec3(1.9, .3, .2), luz), esfera(p - vec3(.2, .82, 0), .03)));
+  vec4 fin_ = une(c, vec4(mix(vec3(.3, .05, .05), vec3(1.9, .3, .2), luz), esfera(p - vec3(.2, .82, 0), .03)));
+  if (tq < 2.6) for (int i = 0; i < 3; i++) { float u = fract(tq * .9 + float(i) / 3.);
+    fin_ = une(fin_, vec4(vec3(.5, 1.5, 1.7), length(vec2(length(a.xz) - .1 - .5 * u, a.y + .35 + .7 * u)) - .022 * (1. - u) * acc + .02 * (1. - acc))); }
+  return fin_;
 }` },
 { id:'ovni', codigo:
 `vec4 criatura(vec3 p, float t) {
@@ -85,19 +89,25 @@ CRIATURAS.push(
   // haz de motas que suben
   float h = -(g.y + .25);
   float cono_ = length(g.xz) - .28 - .34 * h;
-  float mota = step(.9, fract(sin(dot(floor(vec3(g.x, g.y - t * .5, g.z) * 17.), vec3(12.9, 78.2, 37.7))) * 4375.));
+  float mota = step(.9 + .085 * acc, fract(sin(dot(floor(vec3(g.x, g.y - t * .5, g.z) * 17.), vec3(12.9, 78.2, 37.7))) * 4375.));
   float haz = max(max(cono_, h - 1.2), -h + .02);
   c = une(c, vec4(vec3(.6, 1.35, 1.25), mota > .5 ? haz * .6 : max(haz * .6, .03)));
   // suelo iluminado
   float s = length(g.xz);
-  return une(c, vec4(mix(vec3(.12, .2, .12), vec3(.5, 1.12, .95), smoothstep(.75, .5, s)), (elipse(g + vec3(0, 1.62, 0), vec3(1.1, .14, 1.1)) + .012 * sin(g.x * 31.) * sin(g.z * 29.)) * .8));
+  vec4 fin_ = une(c, vec4(mix(vec3(.12, .2, .12), vec3(.5, 1.12, .95), smoothstep(.75, .5, s)), (elipse(g + vec3(0, 1.62, 0), vec3(1.1, .14, 1.1)) + .012 * sin(g.x * 31.) * sin(g.z * 29.)) * .8));
+  if (tq < 3.2) { vec3 b = g - vec3(0, -1.42 + 1.05 * smoothstep(.3, 2.6, tq), 0); b.xz *= gira(tq * 2.); b.xy *= gira(.4 * sin(tq * 3.)); b /= max(.05, acc);
+    vec3 m = vec3(b.x, b.y, abs(b.z));
+    float v = elipse(b, vec3(.2, .12, .11)); v = funde(v, elipse(b - vec3(-.22, .06, 0), vec3(.09, .07, .07)), .05);
+    v = min(v, capsula(vec3(abs(b.x) - .11, b.y, m.z - .06), vec3(0, -.08, 0), vec3(0, -.24, 0), .028));
+    fin_ = une(fin_, vec4(mix(vec3(.9), vec3(.1), step(.25, sin(b.x * 19. + 1.) * sin(b.y * 17. + b.z * 15.))), v * max(.05, acc) * .8)); }
+  return fin_;
 }` },
 // ---------- Naturaleza ----------
 { id:'girasol', codigo:
 `vec4 criatura(vec3 p, float t) {
   p.xy *= gira(.05 * sin(t * .8));
   vec3 q = p - vec3(0, .42, .05); q.yz *= gira(.22); q.xz *= gira(.25 * sin(t * .3));
-  vec3 s = vec3(q.x, q.z, q.y);
+  vec3 s = vec3(q.x, q.z, q.y); s.xz *= gira(vuelta());
   float r = length(s.xz), a = atan(s.z, s.x);
   // disco de semillas en espiral
   float esp = sin(a * 21. + r * 46.) * sin(a * 13. - r * 46.);
@@ -126,6 +136,7 @@ CRIATURAS.push(
 { id:'cactus', codigo:
 `vec4 criatura(vec3 p, float t) {
   p.xz *= gira(.3 * sin(t * .25));
+  p.x += acc * .09 * sin(tq * 8.) * (p.y + 1.1);
   vec3 arena = vec3(.62, .46, .27);
   float du = elipse(p + vec3(0, 1.22, 0), vec3(1.2, .24, 1.)) + .012 * sin(p.x * 30. + 4. * sin(p.z * 5.));
   vec4 c = vec4(arena, du * .8);
@@ -148,7 +159,7 @@ CRIATURAS.push(
   // flores en las puntas
   for (int i = 0; i < 3; i++) {
     vec3 o = i == 0 ? vec3(0, 1.13, 0) : i == 1 ? vec3(.64, .62, .02) : vec3(-.58, .83, -.02);
-    vec3 q = ronda(p - o, 7.); q.xy *= gira(-.6);
+    vec3 q = ronda(p - o, 7.); q.xy *= gira(-.6 + .5 * acc); q /= 1. + .9 * acc;
     c = une(c, vec4(mix(vec3(.95, .8, .4), vec3(.85, .22, .4), smoothstep(.02, .1, q.x)), elipse(q - vec3(.08, 0, 0), vec3(.1, .022, .045)) * .7));
   }
   // piedras
@@ -159,10 +170,12 @@ CRIATURAS.push(
 `vec4 criatura(vec3 p, float t) {
   p.xz *= gira(.4 * sin(t * .22)); p.y += .05;
   vec4 c = vec4(vec3(.16, .26, .12), (elipse(p + vec3(0, 1.15, 0), vec3(1.1, .3, .95)) + .035 * sin(p.x * 13.) * sin(p.z * 14.) + .015 * sin(p.x * 37.) * sin(p.z * 41.)) * .7);
+  float q_ = 1.;
   for (int i = 0; i < 4; i++) {
     vec3 o = i == 0 ? vec3(-.1, .3, 0) : i == 1 ? vec3(.62, -.18, .2) : i == 2 ? vec3(-.68, -.35, .25) : vec3(.15, -.62, .62);
+    q_ = 1. + .13 * acc * sin(tq * 9. - float(i) * 1.5);
     float S = i == 0 ? .62 : i == 1 ? .42 : i == 2 ? .34 : .22;
-    vec3 q = p - o; q.x += .02 * sin(t * .8 + float(i)) * (q.y + 1.);
+    S *= q_; vec3 q = p - o; q.x += .02 * sin(t * .8 + float(i)) * (q.y + 1.);
     float a = atan(q.z, q.x), r = length(q.xz);
     // sombrero, láminas y pie
     float cap = elipse(q, vec3(S, S * .72, S));
@@ -187,7 +200,10 @@ CRIATURAS.push(
     vec3 o = vec3(.9 * sin(t * .4 + k * 2.1), -.1 + .5 * sin(t * .6 + k * 1.3), .5 + .4 * cos(t * .5 + k));
     c = une(c, vec4(vec3(1.5, 1.7, .6) * (.7 + .3 * sin(t * 4. + k * 2.)), esfera(p - o, .025)));
   }
-  return c;
+  vec4 fin_ = c;
+  if (tq < 3.) for (int i = 0; i < 8; i++) { float g = float(i), u = fract(tq * .4 + g * .13);
+    fin_ = une(fin_, vec4(vec3(1.4, 1.2, .5), esfera(p - vec3(.7 * sin(g * 2.4) + .1 * sin(tq * 2. + g), -.1 + 1.1 * u, .5 * cos(g * 2.4)), .035 * acc * (1. - u)))); }
+  return fin_;
 }` },
 { id:'tornado', codigo:
 `vec4 criatura(vec3 p, float t) {
@@ -195,14 +211,14 @@ CRIATURAS.push(
   vec2 cen = vec2(.16 * sin(p.y * 2.2 + t * 1.3), .1 * cos(p.y * 1.9 + t)) * (1. - .4 * h);
   vec3 q = p; q.xz -= cen;
   float a = atan(q.z, q.x), r = length(q.xz);
-  float R = .07 + .22 * h + .55 * h * h * h;
+  float R = (1. + .35 * acc) * (.07 + .22 * h + .55 * h * h * h);
   float es = sin(a * 3. + q.y * 9. - t * 7.) + .6 * sin(a * 7. - q.y * 17. - t * 9.) + .4 * sin(a * 13. + q.y * 31. - t * 11.);
   float d = max((r - R - .03 * es) * .5, abs(p.y) - 1.12);
   vec4 c = vec4(mix(vec3(.28, .27, .27), vec3(.66, .64, .6), smoothstep(-1., 1.2, es)), d);
   // techo de nubes
   vec3 n = p - vec3(0, 1.2, 0);
   float nb = elipse(n, vec3(1.35, .2, .9)) + .06 * sin(n.x * 8. + t) * sin(n.z * 9.) + .03 * sin(n.x * 19.) * sin(n.y * 17. + n.z * 15.);
-  float rayo = step(.965, sin(t * 2.3) * sin(t * 3.7 + 1.)) ;
+  float rayo = acc * step(.55, sin(tq * 21.)) + step(.965, sin(t * 2.3) * sin(t * 3.7 + 1.)) ;
   c = une(c, vec4(mix(vec3(.3, .31, .34), vec3(1.4, 1.5, 1.7), rayo), nb * .6));
   // polvo al pie y escombros en órbita
   vec3 v = q + vec3(0, 1.08, 0);
@@ -241,7 +257,7 @@ CRIATURAS.push(
   // aspas de celosía girando
   vec3 a = p - vec3(0, .48, .46);
   c = une(c, vec4(vec3(.25), capsula(p, vec3(0, .48, .1), vec3(0, .48, .5), .05)));
-  a.xy *= gira(t * .7);
+  a.xy *= gira(t * .7 + 3. * vuelta());
   vec3 s = vec3(a.x, a.z, a.y); s = ronda(s, 4.);
   c = une(c, vec4(vec3(.36, .23, .14), capsula(s, vec3(0), vec3(.92, 0, 0), .022)));
   vec2 m = abs(fract(vec2(s.x * 9., s.z * 13.)) - .5);
@@ -277,7 +293,10 @@ CRIATURAS.push(
     cam = min(cam, capsula(w, vec3(0, -.02, 0), vec3(.01 * sin(t * 3. + f), -.12, 0), .012));
     c = une(c, vec4(vec3(.3, .2, .12), cam));
   }
-  return une(c, vec4(vec3(1.6, .85, .4), esfera(p - vec3(-1.05, .75, -.9), .2)));
+  vec4 fin_ = une(c, vec4(vec3(1.6, .85, .4), esfera(p - vec3(-1.05, .75, -.9), .2)));
+  if (tq < 3.) { vec3 b = p - vec3(-.22, .95, -.3); float v = max(length(b.xz) - (.02 + .05 * b.y) * acc, -b.y); float m = step(.5, fract(sin(dot(floor(vec2(b.y * 18. - tq * 14., b.x * 22.)), vec2(12.9, 78.2))) * 4375.));
+    fin_ = une(fin_, vec4(vec3(1.7, 1.4, .7), max(v, b.y - 1.3) * .7 + .03 * m * 0. + .05 * (1. - acc))); fin_ = une(fin_, vec4(vec3(1.9, 1.6, .9), esfera(b, .09 * acc))); }
+  return fin_;
 }` },
 { id:'pagoda', codigo:
 `vec4 criatura(vec3 p, float t) {
@@ -307,7 +326,9 @@ CRIATURAS.push(
   // aguja con anillos
   float r = length(p.xz);
   c = une(c, vec4(vec3(.7, .55, .25), min(capsula(p, vec3(0, .95, 0), vec3(0, 1.3, 0), .02), max(abs(fract(p.y * 13.) - .5) / 13. - .012, max(r - .07, abs(p.y - 1.12) - .12)))));
-  return c;
+  vec4 fin_ = c;
+  fin_ = une(fin_, cohetes(p));
+  return fin_;
 }` },
 // ---------- Objetos ----------
 { id:'guitarra', codigo:
@@ -339,9 +360,11 @@ CRIATURAS.push(
   // cuerdas que vibran
   float n = clamp(round(p.x / .019), -2.5, 2.5);
   n = floor(p.x / .019) + .5; n = clamp(n, -2.5, 2.5);
-  vec3 s = vec3(p.x - n * .019 - .004 * sin(t * 30. + n) * sin((p.y + .82) * 1.9) * step(.9, sin(t * 1.3 + n)), p.y, p.z - .178);
+  vec3 s = vec3(p.x - n * .019 - .004 * sin(t * 30. + n) * sin((p.y + .82) * 1.9) * max(step(.9, sin(t * 1.3 + n)), 2. * acc), p.y, p.z - .178);
   float cd = max(length(s.xz) - .0045, max(p.y - 1., -.82 - p.y));
-  return une(c, vec4(vec3(.95, .88, .7), cd * .9));
+  vec4 fin_ = une(c, vec4(vec3(.95, .88, .7), cd * .9));
+  fin_ = une(fin_, notas(p - vec3(.1, -.3, .25)));
+  return fin_;
 }` },
 { id:'camara', codigo:
 `vec4 criatura(vec3 p, float t) {
@@ -372,7 +395,7 @@ CRIATURAS.push(
   vec3 vid = mix(vec3(.05, .08, .16), vec3(.3, .22, .5), smoothstep(.2, .0, length(p.xy - vec2(-.06, .06))));
   c = une(c, vec4(mix(vid, vec3(.3, .4, .5), an * .5), elipse(p - vec3(0, -.04, .5), vec3(.27, .27, .16))));
   // destello y correa
-  c = une(c, vec4(vec3(1.3, 1.2, .9) * step(.97, sin(t * 1.1)) + vec3(.5, .52, .5), caja(p - vec3(-.6, .24, .3), vec3(.14, .07, .02))));
+  c = une(c, vec4(vec3(1.3, 1.2, .9) * step(.97, sin(t * 1.1)) + vec3(.5, .52, .5) + (tq < 2. ? vec3(1.6) * exp(-5. * abs(tq - .55)) : vec3(0)), caja(p - vec3(-.6, .24, .3), vec3(.14, .07, .02)) - (tq < 2. ? .22 * exp(-7. * abs(tq - .55)) : 0.)));
   vec3 q = vec3(abs(p.x), p.yz);
   return une(c, vec4(vec3(.25, .15, .09), curva(q, vec3(.96, .34, 0), vec3(1.2, .1, .1), vec3(1.02, -.75, .1), .03, .03)));
 }` },
@@ -410,7 +433,9 @@ CRIATURAS.push(
   ll = funde(ll, cono(f, vec3(0, -.02, 0), vec3(0, .36, 0), .085, .004), .06);
   vec3 tono = mix(vec3(.5, .8, 1.6), vec3(1.9, 1.5, .75), smoothstep(-.26, -.1, f.y));
   tono = mix(tono, vec3(1.8, .85, .25), smoothstep(.08, .35, f.y));
-  return une(c, vec4(tono, ll * .7));
+  float ap = smoothstep(.15, .5, tq) * (1. - smoothstep(2.4, 3.1, tq));
+  if (tq < 3.4) for (int i = 0; i < 4; i++) { float g = float(i), u = fract(tq * .5 + g * .25); vec3 b = p - vec3(.1 * sin(u * 7. + g), .55 + .75 * u, .04 * cos(u * 6.)); c = une(c, vec4(vec3(.45), esfera(b, (.025 + .05 * u) * ap) + .03 * (1. - ap))); }
+  return une(c, vec4(tono, ll * .7 + .32 * ap));
 }` },
 { id:'ajedrez', codigo:
 `vec4 criatura(vec3 p, float t) {
@@ -424,6 +449,7 @@ CRIATURAS.push(
   for (int i = 0; i < 5; i++) {
     vec2 o = i == 0 ? vec2(-.18, -.18) : i == 1 ? vec2(.54, .18) : i == 2 ? vec2(.18, .9) : i == 3 ? vec2(-.9, .18) : vec2(.9, -.9);
     vec3 q = p - vec3(o.x, -.72, o.y);
+    if (i == 1) q.xy *= gira(1.5 * smoothstep(0., 1., acc)); if (i == 0) q.y -= .25 * sin(3.1416 * clamp(tq / 1.2, 0., 1.)) * step(tq, 1.2);
     bool rey = i < 2; bool cl = i == 0 || i == 2;
     float H = rey ? 1.15 : .5, r = length(q.xz);
     // torneado
@@ -456,7 +482,7 @@ CRIATURAS.push(
   float zig = step(0., sin(a * 8.) * .12 + q.y - .02) * step(q.y, .2 + sin(a * 8.) * .12);
   vec3 tono = mix(vec3(.7, .14, .12), vec3(.88, .68, .28), abs(k));
   tono = mix(tono, vec3(.12, .25, .42), zig);
-  tono *= 1. + .25 * smoothstep(-.3, -.9, q.y);
+  tono *= 1. + (.25 + .35 * acc) * smoothstep(.1, -.9, q.y);
   vec4 c = vec4(tono, d * .8);
   c = une(c, vec4(vec3(.35, .25, .15), length(vec2(r - .18, q.y + .95)) - .02));
   // cuerdas y barquilla de mimbre
@@ -467,7 +493,7 @@ CRIATURAS.push(
   ba = max(ba, -caja(p + vec3(0, 1., 0), vec3(.1, .14, .1)));
   c = une(c, vec4(vec3(.5, .34, .18) * (1. + 25. * mi), (ba + mi) * .8));
   c = une(c, vec4(vec3(.36, .2, .1), max(abs(p.y + .97) - .02, max(s.x, s.z) - .15) * 1.));
-  float so = .5 + .5 * sin(t * 1.7);
+  float so = max(.5 + .5 * sin(t * 1.7), 1.7 * acc);
   return une(c, vec4(vec3(1.9, 1., .35), elipse(p + vec3(0, .72, 0), vec3(.035, .05 + .1 * so * so, .035)) * .8));
 }` },
 // ---------- Máquinas ----------
@@ -495,19 +521,19 @@ CRIATURAS.push(
   c = une(c, vec4(pa, caja(b, vec3(.31, .24, .012))));
   // cuello, cabeza y antena
   c = une(c, vec4(vec3(.3), max(length(p.xz) - .12, abs(p.y - .42) - .06)));
-  vec3 k = p - vec3(0, .72, 0); k.xz *= gira(.35 * sin(t * .8));
+  vec3 k = p - vec3(0, .72, 0); k.xz *= gira(.35 * sin(t * .8) + vuelta());
   c = une(c, vec4(lata, caja(k, vec3(.29, .22, .24)) - .04));
   vec3 e = vec3(abs(k.x) - .13, k.y - .04, k.z - .27);
   c = une(c, vec4(vec3(.25), max(length(e.xy) - .095, abs(e.z) - .03)));
-  c = une(c, vec4(vec3(1.7, 1.25, .5), elipse(e - vec3(0, 0, .02), vec3(.07, .07 * (1.05 - parpado()), .03))));
+  c = une(c, vec4(mix(vec3(1.7, 1.25, .5), vec3(1.8, .3, .2), acc * step(0., sin(tq * 12.))), elipse(e - vec3(0, 0, .02), vec3(.07, .07 * (1.05 - parpado()), .03))));
   float bo = step(.5, fract(k.x * 14.));
   c = une(c, vec4(mix(vec3(.1), vec3(.7), bo), caja(k - vec3(0, -.14, .275), vec3(.17, .045, .012))));
   e = vec3(abs(k.x) - .36, k.yz); c = une(c, vec4(vec3(.5, .2, .12), max(length(e.yz) - .09, abs(e.x) - .04)));
   c = une(c, vec4(vec3(.6), capsula(k, vec3(0, .25, 0), vec3(0, .45, 0), .016)));
   c = une(c, vec4(vec3(1.8, .35, .2) * (.6 + .4 * step(0., sin(t * 5.))), esfera(k - vec3(0, .48, 0), .05)));
   // brazos de tubo con pinzas
-  float m = .16 * paso * lado;
-  float br = curva(q, vec3(.44, .2, 0), vec3(.78, .18, 0), vec3(.72, -.32, .12 + m), .085, .075);
+  float m = .16 * paso * lado + acc * .3 * sin(tq * 8. + lado);
+  float br = curva(q, vec3(.44, .2, 0), vec3(.78, .18, 0), vec3(.72, -.32 + acc * .0, .12 + m), .085, .075);
   br += .014 * sin(length(q - vec3(.44, .2, 0)) * 60.);
   c = une(c, vec4(vec3(.36, .37, .38), br * .8));
   vec3 h = q - vec3(.72, -.4, .14 + m);
@@ -549,7 +575,7 @@ CRIATURAS.push(
   // ruedas motrices y bielas
   float x = p.x + .0 - .44 * clamp(round(p.x / .44), -1., 1.) ;
   vec2 w = vec2(x, p.y + .42);
-  float rr = length(w), an = atan(w.y, w.x) + t * 4.;
+  float rr = length(w), an = atan(w.y, w.x) + t * 4. + acc * tq * 6.;
   float ru = max(abs(rr - .18) - .025, abs(q.z - .34) - .035);
   ru = min(ru, max(max(rr - .18, abs(sin(an * 5.)) * rr - .018), abs(q.z - .34) - .02));
   ru = min(ru, max(rr - .05, abs(q.z - .36) - .05));
@@ -565,9 +591,11 @@ CRIATURAS.push(
   for (int i = 0; i < 5; i++) {
     float f = float(i), s = fract(t * .35 + f * .2);
     vec3 o = p - vec3(-.72 + 1.5 * s, .72 + .5 * s, .06 * sin(f * 3.));
-    c = une(c, vec4(vec3(.62) * (1. - .3 * s), (esfera(o, .08 + .18 * s) + .035 * sin(o.x * 14.) * sin(o.y * 13. + f) * sin(o.z * 12.)) * .6 + .5 * smoothstep(.8, 1., s)));
+    c = une(c, vec4(vec3(.62) * (1. - .3 * s), (esfera(o, (.08 + .18 * s) * (1. + .6 * acc)) + .035 * sin(o.x * 14.) * sin(o.y * 13. + f) * sin(o.z * 12.)) * .6 + .5 * smoothstep(.8, 1., s)));
   }
-  return c;
+  vec4 fin_ = c;
+  if (tq < 3.) { float u = fract(tq * 2.); vec3 b = p - vec3(.15, .48 + .5 * u, 0); fin_ = une(fin_, vec4(vec3(.85), cono(b, vec3(0), vec3(.05, .12, 0), .03 + .07 * u, .05) + .12 * (1. - acc) + .1 * u)); }
+  return fin_;
 }` },
 { id:'submarino', codigo:
 `vec4 criatura(vec3 p, float t) {
@@ -585,7 +613,7 @@ CRIATURAS.push(
   c = une(c, vec4(vec3(.24, .38, .4), to * .8));
   c = une(c, vec4(vec3(.5, .4, .2), length(vec2(length((p.xz - vec2(.05, 0)) * vec2(.8, 1.2)) - .2, p.y - .62)) - .02));
   float pe = capsula(p, vec3(-.05, .55, 0), vec3(-.05, .98, 0), .03);
-  vec3 pp = p - vec3(-.05, .98, 0); pp.xz *= gira(.8 * sin(t * .5));
+  vec3 pp = p - vec3(-.05, .98, 0); pp.xz *= gira(.8 * sin(t * .5) + vuelta());
   pe = min(pe, capsula(pp, vec3(0), vec3(-.13, 0, 0), .04));
   c = une(c, vec4(vec3(.45), pe));
   c = une(c, vec4(vec3(.4, 1.1, 1.3), esfera(pp - vec3(-.15, 0, 0), .034)));
@@ -598,7 +626,7 @@ CRIATURAS.push(
   // aletas, hélice y faros
   c = une(c, vec4(vec3(.2, .32, .34), elipse(q - vec3(.85, 0, .38), vec3(.16, .03, .22)) * .8));
   c = une(c, vec4(vec3(.2, .32, .34), elipse(p - vec3(.95, .02, 0), vec3(.14, .4, .03)) * .8));
-  vec3 h = p - vec3(1.22, 0, 0); h.yz *= gira(t * 5.);
+  vec3 h = p - vec3(1.22, 0, 0); h.yz *= gira(t * 5. + acc * tq * 9.);
   vec3 u = ronda(vec3(h.y, h.x, h.z), 4.); u.yz *= gira(.5);
   c = une(c, vec4(vec3(.65, .5, .22), min(elipse(u - vec3(.15, 0, 0), vec3(.15, .025, .07)) * .7, esfera(h, .06))));
   c = une(c, vec4(vec3(1.8, 1.6, 1.1), esfera(q - vec3(-1., -.16, .16), .07)));
@@ -606,13 +634,13 @@ CRIATURAS.push(
   for (int i = 0; i < 6; i++) {
     float f = float(i), s = fract(t * .28 + f * .17);
     vec3 b = vec3(1.15 + .25 * s + .05 * sin(t * 3. + f), -.1 + .95 * s, .12 * sin(f * 2.4));
-    c = une(c, vec4(vec3(.55, .75, .8), esfera(p - b, .02 + .03 * fract(f * .37))));
+    c = une(c, vec4(vec3(.55, .75, .8), esfera(p - b, (.02 + .03 * fract(f * .37)) * (1. + 1.3 * acc))));
   }
   return c;
 }` },
 { id:'biplano', codigo:
 `vec4 criatura(vec3 p, float t) {
-  p.xy *= gira(.1 * sin(t * .8)); p.y -= .05 * sin(t * 1.1); p.xz *= gira(.65 + .35 * sin(t * .3)); p.yz *= gira(.18 + .12 * sin(t * .5));
+  p.xy *= gira(.1 * sin(t * .8) + vuelta()); p.y -= .05 * sin(t * 1.1); p.xz *= gira(.65 + .35 * sin(t * .3)); p.yz *= gira(.18 + .12 * sin(t * .5));
   vec3 q = vec3(p.xy, abs(p.z));
   vec3 rojo = vec3(.5, .1, .08), crema = vec3(.8, .72, .55);
   // fuselaje
@@ -660,23 +688,23 @@ CRIATURAS.push(
   p.yz *= gira(-.14); p.xz *= gira(giro); p.xz *= gira(t * .25); p.y += .06;
   float a = atan(p.z, p.x), r = length(p.xz);
   vec3 pan = mix(vec3(.72, .42, .16), vec3(.45, .2, .06), smoothstep(.3, .85, p.y));
-  // pan de abajo
+  float ex = .2 * acc; p.y += ex * 2.2;
   vec4 c = vec4(vec3(.78, .56, .3), max(elipse(p + vec3(0, .42, 0), vec3(.95, .42, .95)), p.y + .5) - .03);
-  // carne
+  p.y -= ex;
   float ca = max(r - .9, abs(p.y + .3) - .11) - .05 + .03 * sin(p.x * 17.) * sin(p.y * 19.) * sin(p.z * 18.);
   c = une(c, vec4(vec3(.26, .13, .07) * (.8 + .4 * sin(p.x * 33.) * sin(p.z * 31.)), ca * .7));
-  // queso derretido
+  p.y -= ex * .8;
   vec3 q = p; q.xz *= gira(.4); float m = max(abs(q.x), abs(q.z));
   float cae = .3 * smoothstep(.82, 1.05, r) * (.6 + .4 * cos(a * 4. + 1.6));
   c = une(c, vec4(vec3(.92, .6, .14), max(abs(p.y + .13 + cae) - .022, max(m - .92, r - 1.05)) * .6));
-  // tomate
+  p.y -= ex;
   vec2 k = vec2(abs(p.x) - .4, p.z);
   float rt = length(k);
   c = une(c, vec4(mix(vec3(.7, .13, .08), vec3(.85, .4, .25), step(.0, cos(atan(k.y, k.x) * 6.)) * step(rt, .3)), max(rt - .46, abs(p.y + .04) - .045) - .01));
-  // lechuga rizada
+  p.y -= ex * .8;
   float on = .07 * sin(a * 13.) + .04 * sin(a * 29. + 1.);
   c = une(c, vec4(mix(vec3(.2, .42, .1), vec3(.55, .72, .25), smoothstep(.8, 1.08, r)), max(abs(p.y - .07 - on * smoothstep(.6, 1., r)) - .022, r - 1.04 - .05 * sin(a * 17.)) * .5));
-  // pan de arriba con ajonjolí
+  p.y -= ex;
   float ar = max(elipse(p - vec3(0, .18, 0), vec3(.98, .66, .98)), .14 - p.y) - .02;
   vec2 w = vec2(a * 2.8, acos(clamp((p.y - .18) / .68, -1., 1.)) * 5.5);
   vec2 id = floor(w), f = fract(w) - .5; float h = fract(sin(dot(id, vec2(12.9, 78.2))) * 4375.);
@@ -698,7 +726,7 @@ CRIATURAS.push(
   for (int i = 0; i < 3; i++) {
     float f = float(i);
     vec3 o = i == 0 ? vec3(-.22, .12, .08) : i == 1 ? vec3(.25, .16, -.04) : vec3(.0, .58, .02);
-    vec3 q = p - o;
+    vec3 q = p - o; q.y /= 1. - .12 * acc; q.x += .05 * acc * sin(tq * 5. + f * 2.);
     float n = .03 * sin(q.x * 15. + f) * sin(q.y * 17.) * sin(q.z * 16.) + .015 * sin(q.x * 37.) * sin(q.y * 39.) * sin(q.z * 41.);
     float d = esfera(q, .4) + n;
     float aa = atan(q.z, q.x);
@@ -710,15 +738,15 @@ CRIATURAS.push(
   }
   // goteo
   for (int i = 0; i < 4; i++) {
-    float f = float(i), k = f * 1.7 + .5, s = .25 + .2 * sin(f * 3.) + .05 * sin(t * .6 + f);
+    float f = float(i), k = f * 1.7 + .5, s = .25 + .2 * sin(f * 3.) + .05 * sin(t * .6 + f) + .5 * acc;
     vec3 b = vec3(.45 * cos(k), -.12, .45 * sin(k));
     c = une(c, vec4(i < 2 ? vec3(.86, .5, .56) : vec3(.34, .2, .13), cono(p, b, b * vec3(.85, 1., .85) - vec3(0, s, 0), .05, .04)));
   }
   // galleta y cereza
   vec3 g = p - vec3(.28, .9, -.1); g.xy *= gira(.4);
   c = une(c, vec4(mix(vec3(.66, .42, .17), vec3(.45, .25, .1), step(.5, fract(atan(g.z, g.x) * 2. + g.y * 9.))), max(abs(length(g.xz) - .06) - .015, abs(g.y) - .32)));
-  c = une(c, vec4(vec3(.62, .04, .07), esfera(p - vec3(-.08, 1.02, .08), .13)));
-  return une(c, vec4(vec3(.25, .36, .12), curva(p, vec3(-.08, 1.13, .08), vec3(-.06, 1.3, .05), vec3(.06, 1.36, .04), .014, .012)));
+  c = une(c, vec4(vec3(.62, .04, .07), esfera(p - vec3(-.08, 1.02 + .3 * acc * abs(sin(tq * 4.5)), .08), .13)));
+  return une(c, vec4(vec3(.25, .36, .12), curva(p - vec3(0, .3 * acc * abs(sin(tq * 4.5)), 0), vec3(-.08, 1.13, .08), vec3(-.06, 1.3, .05), vec3(.06, 1.36, .04), .014, .012)));
 }` },
 { id:'sushi', codigo:
 `vec4 criatura(vec3 p, float t) {
@@ -729,7 +757,7 @@ CRIATURAS.push(
   vec4 c = vec4(vec3(.5, .31, .15) * (.85 + .2 * sin(p.z * 34. + 2. * sin(p.x * 3.))), ta);
   // dos nigiri
   for (int i = 0; i < 2; i++) {
-    vec3 q = p - vec3(-.62 + .52 * float(i), -.2, -.2 + .1 * float(i)); q.xz *= gira(.25);
+    vec3 q = p - vec3(-.62 + .52 * float(i), -.2, -.2 + .1 * float(i)); q.xz *= gira(.25); if (i == 1) q.y -= .42 * acc;
     float g = .016 * sin(q.x * 47.) * sin(q.y * 45.) * sin(q.z * 49.);
     c = une(c, vec4(vec3(.9, .88, .82), (elipse(q, vec3(.2, .16, .38)) + g) * .75));
     vec3 s = q - vec3(0, .13 - .55 * q.z * q.z, 0);
@@ -752,7 +780,7 @@ CRIATURAS.push(
   c = une(c, vec4(vec3(.45, .62, .25), (elipse(p - vec3(.95, -.3, .25), vec3(.13, .12, .12)) + .02 * sin(p.x * 30.) * sin(p.z * 31.)) * .8));
   vec3 j = p - vec3(.05, -.31, .4);
   c = une(c, vec4(vec3(.88, .62, .56), (elipse(j, vec3(.2, .07, .13)) + .03 * sin(j.x * 26. + j.z * 12.)) * .6));
-  vec3 u = p - vec3(-.35, -.28, .62); u.xz *= gira(-.08);
+  vec3 u = p - vec3(-.35, -.28, .62); u.xz *= gira(-.08); u -= acc * vec3(.12, .42, -.62); u.xy *= gira(.25 * acc);
   u.z = abs(u.z) - .045;
   return une(c, vec4(mix(vec3(.2, .05, .04), vec3(.75, .6, .3), step(.5, u.x)), cono(u, vec3(-.8, 0, 0), vec3(.85, .04, 0), .018, .032)));
 }` },
@@ -764,6 +792,7 @@ CRIATURAS.push(
   float d = max(max(r - R, p.y - .28), abs(p.z) - .17);
   float mo = min(length(p.xy - vec2(.62, .34)) - .24, length(p.xy - vec2(.86, .22)) - .2);
   mo = min(mo, length(p.xy - vec2(.4, .4)) - .2);
+  if (tq < 3.2) for (int i = 0; i < 3; i++) { float g = float(i), k = smoothstep(.3 + .5 * g, .4 + .5 * g, tq) * (1. - smoothstep(2.4, 3.1, tq)); vec2 b = p.xy - vec2(-.7 + .42 * g, .34); mo = min(mo, length(b) - .27 * k + .03 * cos(atan(b.y, b.x) * 9.) * k + .3 * (1. - step(.01, k))); }
   d = max(d, -mo) - .02;
   vec3 pulpa = mix(vec3(.82, .13, .14), vec3(.9, .3, .26), smoothstep(.2, .85, r)) * (.92 + .1 * sin(p.x * 41.) * sin(p.y * 39.));
   pulpa = mix(pulpa, vec3(.9, .85, .68), smoothstep(.9, .97, r));
@@ -793,21 +822,21 @@ CRIATURAS.push(
   for (int i = 0; i < 3; i++) {
     vec3 a = mod(p * s, 2.) - 1.;
     s *= 3.;
-    vec3 r = abs(1. - 3. * abs(a));
+    vec3 r = abs(1. - (3. - .4 * acc * abs(sin(tq * 3.))) * abs(a));
     float c = (min(max(r.x, r.y), min(max(r.y, r.z), max(r.z, r.x))) - 1.) / s;
     if (c > d) { d = c; tr = float(i + 2); }
   }
   vec3 m = mix(vec3(.75, .62, .42), vec3(.55, .28, .16), step(2.5, tr));
   m = mix(m, vec3(.2, .16, .2), step(3.5, tr));
   vec4 k = vec4(m * (.92 + .08 * sin(p.x * 60.)), d * .74 * .9);
-  return une(k, vec4(vec3(1.7, .8, .3) * (.85 + .15 * sin(t * 2.)), esfera(p, .2) * .74));
+  return une(k, vec4(vec3(1.7, .8, .3) * (.85 + .15 * sin(t * 2.)), esfera(p, .2 + .2 * acc) * .74));
 }` },
 { id:'giroide', codigo:
 `vec4 criatura(vec3 p, float t) {
   p.xz *= gira(t * .2); p.xy *= gira(.3 * sin(t * .25));
-  vec3 q = p * 5.6; q.y += t * .5;
+  float fr = 5.6 + 3.4 * acc; vec3 q = p * fr; q.y += t * .5;
   float g = dot(sin(q), cos(q.zxy));
-  float d = (abs(g) - .2) / 5.6 * .62;
+  float d = (abs(g) - .2) / fr * .6;
   d = max(d, esfera(p, 1.));
   float cara = step(0., g);
   vec3 m = mix(vec3(.12, .36, .42), vec3(.78, .55, .28), cara) * (.9 + .1 * sin(g * 60.));
@@ -832,11 +861,11 @@ CRIATURAS.push(
   vec4 c = vec4(m, d * .6);
   // dos bolitas que recorren la única cara
   for (int i = 0; i < 3; i++) {
-    float k = t * .7 + float(i) * 4.19;
+    float k = t * .7 + float(i) * 4.19 + 2. * vuelta();
     vec3 n = vec3(.82 * cos(k), 0, .82 * sin(k));
     float w = k * .5, e = .1;
     n += (vec3(cos(k), 0, sin(k)) * sin(w) + vec3(0, cos(w), 0)) * e;
-    c = une(c, vec4(vec3(.5, 1.5, 1.4), esfera(p - n, .065)));
+    c = une(c, vec4(vec3(.5, 1.5, 1.4) * (1. + .2 * acc), esfera(p - n, .065)));
   }
   return c;
 }` },
@@ -846,12 +875,12 @@ CRIATURAS.push(
   p.xz *= gira(.35 * sin(t * .35) - .25); p.y += .05;
   vec3 q = vec3(abs(p.x), p.yz);
   float res_ = .012 * sin(t * 1.8);
-  // cuerpo sentado
+  vec3 pata = acc * step(0., p.x) * vec3(.46, 1.2 + .14 * sin(tq * 10.), .26);
   float d = elipse(p - vec3(0, -.55, -.18), vec3(.46 + res_, .58, .5));
   d = funde(d, elipse(p - vec3(0, -.2, .08), vec3(.31, .5, .3)), .2);
   d = funde(d, elipse(q - vec3(.34, -.86, .0), vec3(.2, .26, .38)), .12);
-  d = funde(d, cono(q, vec3(.15, -.35, .24), vec3(.15, -1.02, .34), .14, .09), .08);
-  d = funde(d, elipse(q - vec3(.15, -1.08, .42), vec3(.11, .07, .15)), .05);
+  d = funde(d, cono(q, vec3(.15, -.35, .24), vec3(.15, -1.02, .34) + pata, .14, .09), .08);
+  d = funde(d, elipse(q - vec3(.15, -1.08, .42) - pata * 1.05, vec3(.11, .07 + .05 * acc, .15 - .05 * acc)), .05);
   d = funde(d, elipse(q - vec3(.36, -1.08, .3), vec3(.12, .07, .17)), .05);
   // cabeza, hocico y orejas
   vec3 k = p - vec3(0, .48, .2); k.xy *= gira(.12 * sin(t * .6)); k.xz *= gira(.2 * sin(t * .45));
@@ -885,47 +914,72 @@ CRIATURAS.push(
 }` },
 { id:'tiburon', codigo:
 `vec4 criatura(vec3 p, float t) {
-  p.y -= .05 * sin(t * .7); p.xz *= gira(.35 * sin(t * .3) + .45);
-  // ondulación
-  float k = smoothstep(-.6, 1.5, p.x);
-  p.z += .28 * k * sin(p.x * 2.2 - t * 2.6);
+  p.y -= .05 * sin(t * .7); p.xz *= gira(.25 * sin(t * .3) + .35);
+  p /= 1.06;
+  // nado: la ondulación crece hacia la cola
+  float k = smoothstep(-.3, 1.4, p.x);
+  p.z += .24 * k * sin(p.x * 2.4 - t * 2.4 - acc * tq * 4.);
   vec3 q = vec3(p.xy, abs(p.z));
-  // cuerpo fusiforme
-  float d = elipse(p - vec3(-.25, 0, 0), vec3(.95, .34, .3));
-  d = funde(d, cono(p, vec3(.2, .02, 0), vec3(1.22, .06, 0), .24, .06), .15);
-  d = funde(d, cono(p, vec3(-.9, .02, 0), vec3(-1.28, .05, 0), .18, .07), .12);
-  // aletas
-  vec3 f = p - vec3(-.1, .3, 0);
-  float al = max(max(abs(f.z) - .035 + .05 * f.y, f.x * .75 + f.y * .5 - .2), max(-f.x * .85 + f.y * .72 - .16, -f.y - .1));
+  // cuerpo: hocico cónico, tronco grueso y cola que se afila
+  vec3 f = p; f.z *= 1.1;
+  float d = cono(f, vec3(-1.22, .1, 0), vec3(-.82, .06, 0), .05, .19);
+  d = funde(d, cono(f, vec3(-.82, .06, 0), vec3(-.22, .02, 0), .19, .31), .1);
+  d = funde(d, cono(f, vec3(-.22, .02, 0), vec3(.5, .04, 0), .31, .18), .12);
+  d = funde(d, cono(f, vec3(.5, .04, 0), vec3(1.2, .08, 0), .18, .05), .1);
+  // boca: la cabeza se corta por la línea de los labios y la mitad de abajo gira como mandíbula
+  float ab = .13 + .04 * sin(t * .9) + .4 * acc * abs(sin(tq * 3.4));
+  float labio = -.02;
+  d = max(d, -max(p.y - labio, p.x + .57));
+  vec3 j = p - vec3(-.57, labio, 0); j.xy *= gira(-ab);
+  vec3 jf = j; jf.z *= 1.1;
+  float ma = cono(jf, vec3(-.43, .1, 0), vec3(-.1, .09, 0), .15, .23);
+  ma = funde(ma, cono(jf, vec3(-.1, .09, 0), vec3(.2, .06, 0), .23, .28), .08);
+  ma = max(ma, j.y);
+  ma = max(ma, -elipse(j - vec3(-.19, .02, 0), vec3(.21, .045, .1)));
+  d = min(d, ma);
+  // aleta dorsal, pequeña dorsal y quilla
+  vec3 a = p - vec3(-.08, .27, 0);
+  float al = max(abs(a.z) - .045 + .07 * a.y, max(max(a.x * .9 + a.y * .42 - .24, -a.x * .78 + a.y * .62 - .12), -a.y - .1));
+  a = p - vec3(.78, .14, 0);
+  al = min(al, max(abs(a.z) - .02, max(max(a.x * .8 + a.y * .5 - .07, -a.x * .7 + a.y * .7 - .04), -a.y - .08)));
   d = funde(d, al, .05);
-  vec3 g = q - vec3(-.32, -.16, .22); g.yz *= gira(-.55); g.xz *= gira(.55);
-  d = funde(d, elipse(g - vec3(.06, 0, .3), vec3(.13, .03, .36)), .06);
-  g = q - vec3(.55, -.1, .1); g.yz *= gira(-.7);
-  d = funde(d, elipse(g - vec3(.04, 0, .1), vec3(.1, .025, .14)), .04);
-  // cola de media luna
-  vec3 c1 = p - vec3(1.22, .06, 0);
-  float co = curva(c1, vec3(0, 0, 0), vec3(.12, .25, 0), vec3(.38, .55, 0), .09, .015);
-  co = min(co, curva(c1, vec3(0, 0, 0), vec3(.08, -.16, 0), vec3(.24, -.34, 0), .08, .015));
-  co = max(co, abs(c1.z) - .035);
-  d = funde(d, co, .05);
-  // boca
-  float bo = elipse(p - vec3(-.98, -.2 - .02 * sin(t), 0), vec3(.2, .085, .17));
-  d = max(d, -bo);
-  float linea = -.04 + .05 * sin(p.x * 7.) + .03 * sin(p.x * 17.);
-  vec3 piel = mix(vec3(.78, .78, .76), vec3(.26, .32, .37), smoothstep(linea - .04, linea + .05, p.y));
-  // branquias
-  float br = smoothstep(.014, .0, abs(fract((p.x + .15 * p.y) * 14.) - .5) / 14.) * step(abs(p.x + .52), .18) * step(abs(p.y), .14);
-  piel *= 1. - .65 * br;
-  piel *= .92 + .1 * sin(p.x * 57.) * sin(p.y * 61.) * sin(p.z * 59.);
-  vec4 c = vec4(mix(piel, vec3(.3, .08, .08), step(bo, .012)), d * .6);
-  // dientes
-  for (int i = 0; i < 2; i++) {
-    float s = i == 0 ? 1. : -1.;
-    float a = atan(p.z, -(p.x + .94)), n = clamp(round(a / .24), -5., 5.); a -= n * .24;
-    float r = length(vec2(p.x + .94, p.z));
-    vec3 u = vec3(sin(a) * r, (p.y + .2) * s - .055, cos(a) * r - .155);
-    c = une(c, vec4(vec3(.88, .86, .8), cono(u, vec3(0, .02, 0), vec3(0, -.05, -.01), .024, .003) * .7));
-  }
-  return une(c, ojo(q - vec3(-.92, .07, .165), .085, vec3(.05, .05, .06), vec3(-.3, 0, 1), vec3(.28, .33, .37)));
+  // pectorales largas y pélvicas
+  a = q - vec3(-.3, -.14, .2); a.yz *= gira(-.5); a.xz *= gira(.6);
+  d = funde(d, max(elipse(a - vec3(.04, 0, .34), vec3(.15, .03, .42)), -(a.x + .2)), .06);
+  a = q - vec3(.5, -.1, .08); a.yz *= gira(-.6); a.xz *= gira(.5);
+  d = funde(d, elipse(a - vec3(.03, 0, .1), vec3(.08, .02, .13)), .04);
+  // cola de media luna, lóbulo de arriba más largo
+  a = p - vec3(1.18, .08, 0);
+  float co = curva(a, vec3(-.05, 0, 0), vec3(.12, .2, 0), vec3(.4, .58, 0), .1, .012);
+  co = min(co, curva(a, vec3(-.05, 0, 0), vec3(.08, -.16, 0), vec3(.26, -.4, 0), .09, .012));
+  d = funde(d, max(co, abs(a.z) - .03), .04);
+  // color: lomo gris, vientre claro, con borde irregular
+  float linea = -.05 + .035 * sin(p.x * 8. + .5) + .015 * sin(p.x * 23.);
+  vec3 piel = mix(vec3(.8, .8, .77), vec3(.27, .33, .38), smoothstep(linea - .025, linea + .035, p.y));
+  // cinco branquias y poro de la piel
+  float bx = p.x + .4 + .25 * p.y, n = clamp(round(bx / .055), -2., 2.);
+  float br = smoothstep(.013, .003, abs(bx - n * .055)) * step(abs(p.y - .01), .13);
+  piel *= 1. - .7 * br;
+  piel *= .93 + .09 * sin(p.x * 61.) * sin(p.y * 67.) * sin(p.z * 59.);
+  // interior de la boca
+  float dentro = max(step(abs(p.y - labio), .014) * step(p.x, -.6), step(-.05, j.y) * step(ma, .004) * step(abs(j.z), .105) * step(j.x, -.0));
+  piel = mix(piel, vec3(.36, .07, .08), dentro);
+  vec4 c = vec4(piel, d * .6);
+  // dientes de arriba, siguiendo el contorno del labio
+  float n1 = clamp(round((p.x + .8) / .048), -4., 4.), x1 = -.8 + n1 * .048;
+  float R1 = x1 < -.82 ? mix(.19, .05, (-.82 - x1) / .4) : mix(.19, .31, (x1 + .82) / .6);
+  float c1 = x1 < -.82 ? mix(.06, .1, (-.82 - x1) / .4) : .055;
+  float z1 = sqrt(max(R1 * R1 - (c1 - labio) * (c1 - labio), 0.)) / 1.1 - .012;
+  vec3 u = vec3(p.x - x1, p.y - labio, q.z - z1);
+  float di = cono(u, vec3(0, .012, 0), vec3(.006, -.05, 0), .02, .002) + step(z1, .02);
+  // dientes de abajo
+  float n2 = clamp(round((j.x + .21) / .048), -3., 3.), x2 = -.21 + n2 * .048;
+  float R2 = mix(.15, .23, clamp((x2 + .42) / .32, 0., 1.)), z2 = sqrt(max(R2 * R2 - .0121, 0.)) / 1.1 - .016;
+  u = vec3(j.x - x2, j.y, abs(j.z) - z2);
+  di = min(di, cono(u, vec3(0, -.012, 0), vec3(.004, .04, 0), .016, .002) + step(z2, .015));
+  c = une(c, vec4(vec3(.92, .9, .84), di * .7));
+  // ojo pequeño y negro, y orificio nasal
+  c = une(c, ojo(q - vec3(-.84, .1, .165), .085, vec3(.02, .02, .025), vec3(-.25, 0, 1), vec3(.26, .32, .37)));
+  return une(c, vec4(vec3(.05), elipse(q - vec3(-1.1, .075, .075), vec3(.022, .012, .012))));
 }` }
 );
