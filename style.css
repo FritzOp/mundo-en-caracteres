@@ -44,3 +44,5 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;touch-action:pinc
 @media(max-aspect-ratio:1/1){#cuenta{bottom:auto;top:58px}}
 @media(prefers-reduced-motion:reduce){#avance i{transition:none}.cargando #espera{animation:none}}
 #avance,#cuenta{opacity:0;transition:opacity .5s ease}.pasando #avance,.pasando #cuenta{opacity:1;transition-duration:.12s}
+.compartir{align-self:flex-start;font:500 .76rem var(--mono);color:var(--bruma);background:none;border:1px solid var(--borde);padding:7px 12px;cursor:pointer;overflow-wrap:anywhere;text-align:left}.compartir:hover{color:var(--hueso);border-color:var(--cian)}
+@media(pointer:coarse){.compartir{padding:11px 16px}}

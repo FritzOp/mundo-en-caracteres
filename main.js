@@ -18,7 +18,7 @@ $('#indice .caja').innerHTML = grupos.map(g => {
   return `<details name="indice"><summary>${g.nombre}<span>${l.length}</span></summary><ul>${l.map(o => `<li><a href="#${o.id}">${o.titulo}</a></li>`).join('')}</ul></details>`;
 }).join('');
 $('main').insertAdjacentHTML('beforeend', grupos.flatMap(g => obras.filter(o => o.grupo === g.id)).map(o =>
-  `<section id="${o.id}" data-c="${o.id}" data-f="${o.grupo}">${ancla1(o.grupo)}${ancla1(slug[o.fondo])}<div class="caja"><h2>${o.titulo}</h2><p class="lat">${o.dato || ''}</p><p>${o.texto || ''}</p></div></section>`).join(''));
+  `<section id="${o.id}" data-c="${o.id}" data-f="${o.grupo}">${ancla1(o.grupo)}${ancla1(slug[o.fondo])}<div class="caja"><h2>${o.titulo}</h2><p class="lat">${o.dato || ''}</p><p>${o.texto || ''}</p><button type="button" class="compartir">Compartir</button></div></section>`).join(''));
 $('main > section:last-child .caja').append($('#creditos').content);
 $$('#inicio,#indice').forEach(s => s.dataset.c = obras[0].id);
 
@@ -231,13 +231,30 @@ const limita = (x, a, b) => Math.max(a, Math.min(b, x));
 
 // ---- Paso de obra. No hay desplazamiento nativo: cada gesto lleva a una obra exacta.
 let pag = 0, hondo = 0, reloj = 0;
-const indiceDe = id => { const el = id && document.getElementById(id); return el ? secs.indexOf(el.closest('section')) : -1; };
+// Cada obra tiene su enlace: #grupo/obra. También valen #obra y #grupo (que abre su primera obra).
+const indiceDe = ruta => {
+  let id = String(ruta).split('/').filter(Boolean).pop() || '';
+  try { id = decodeURIComponent(id); } catch (e) {}
+  const el = id && document.getElementById(id); return el ? secs.indexOf(el.closest('section')) : -1;
+};
+const hashDe = sec => sec.dataset.f ? '#' + sec.dataset.f + '/' + sec.id : '#' + sec.id;
+const enlaceDe = sec => location.origin + location.pathname + hashDe(sec);
+let urlReloj = 0;
+function ponUrl() {
+  const sec = secs[pag], marca = 'Mundo en caracteres';
+  document.title = sec.dataset.f ? C[sec.id].titulo + ' | ' + marca : marca;
+  clearTimeout(urlReloj);
+  urlReloj = setTimeout(() => {
+    if (location.hash === hashDe(secs[pag]) || pag === 0 && !location.hash) return;
+    try { history.replaceState(null, '', hashDe(secs[pag])); } catch (e) {}
+  }, 200);
+}
 function ir(i) {
   i = limita(i, 0, secs.length - 1);
   if (i === pag) return false;
   pag = i; velGiro = 0;
   try { sessionStorage.setItem('pag', i); } catch (e) {}
-  ponTexto(secs[i]); pide();
+  ponTexto(secs[i]); ponUrl(); pide();
   // la línea de avance y el contador solo se ven mientras se pasa de obra
   document.body.classList.add('pasando'); clearTimeout(reloj); reloj = setTimeout(() => document.body.classList.remove('pasando'), 900);
   return true;
@@ -264,17 +281,30 @@ addEventListener('focusin', e => { const i = secs.indexOf(e.target.closest('sect
 const cajaLibre = (el, baja) => { const k = el.closest && el.closest('.desborda'); return k && (baja ? k.scrollTop + k.clientHeight < k.scrollHeight - 2 : k.scrollTop > 2); };
 
 // Enlaces del menú, del índice y de la portada
-const hashDe = sec => sec.dataset.f ? '#' + sec.dataset.f : '#inicio';
 document.addEventListener('click', e => {
   const a = e.target.closest('a[href^="#"]'); if (!a) return;
   const i = indiceDe(a.hash.slice(1)); if (i < 0) return;
-  e.preventDefault(); a.blur(); ir(i);
+  e.preventDefault(); a.blur();
   if (location.hash !== hashDe(secs[i])) history.pushState(null, '', hashDe(secs[i]));
+  ir(i);
 });
-addEventListener('popstate', () => {
-  const id = location.hash.slice(1), i = id ? indiceDe(id) : 0;
-  if (i >= 0 && !(GRUPOS.some(g => g.id === id) && secs[pag].dataset.f === id)) ir(i);
-});
+addEventListener('popstate', () => { const i = location.hash ? indiceDe(location.hash.slice(1)) : 0; if (i >= 0) { ir(i); ponUrl(); } });
+
+// Compartir: menú del teléfono si lo hay; si no, copia el enlace
+async function comparte(b) {
+  const sec = b.closest('section'), url = enlaceDe(sec), titulo = C[sec.id].titulo;
+  const di = t => { b.textContent = t; clearTimeout(b.reloj); b.reloj = setTimeout(() => b.textContent = 'Compartir', 1800); };
+  if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+    try { await navigator.share({ title: titulo + ' | Mundo en caracteres', url }); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(url); di('Enlace copiado'); }
+  catch (e) {
+    const t = document.createElement('textarea'); t.value = url; t.style.cssText = 'position:fixed;opacity:0'; document.body.append(t); t.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e2) {}
+    t.remove(); di(ok ? 'Enlace copiado' : url);
+  }
+}
+document.addEventListener('click', e => { const b = e.target.closest('.compartir'); if (b) comparte(b); });
 
 // Dedo: sobre el orbe lo arrastra; en vertical pasa de obra; en horizontal la gira (más abajo)
 let sujeto = null, radio = .06, gesto = null;
@@ -286,7 +316,7 @@ document.addEventListener('touchstart', e => {
   if (sujeto !== null) { e.preventDefault(); return; }
   if (e.touches.length > 1) { gesto = null; return; }
   if (t.target.closest('#familias')) return;
-  if (enOrbe(t) && !t.target.closest('a,summary')) { sujeto = t.identifier; e.preventDefault(); lleva(t); return; }
+  if (enOrbe(t) && !t.target.closest('a,summary,button')) { sujeto = t.identifier; e.preventDefault(); lleva(t); return; }
   gesto = { id: t.identifier, x: t.clientX, y: t.clientY, y0: t.clientY, t: performance.now(), modo: null, pasos: 0, el: t.target };
 }, { passive: false });
 document.addEventListener('touchmove', e => {
@@ -326,7 +356,7 @@ addEventListener('wheel', e => {
 }, { passive: true });
 addEventListener('keydown', e => {
   if (e.ctrlKey || e.altKey || e.metaKey) return;
-  const enControl = e.target.closest && e.target.closest('a,summary');
+  const enControl = e.target.closest && e.target.closest('a,summary,button');
   const d = { ArrowDown: 1, PageDown: 1, ArrowUp: -1, PageUp: -1 }[e.key] || (e.key === ' ' && !enControl ? (e.shiftKey ? -1 : 1) : 0);
   if (d) { e.preventDefault(); ir(pag + d); } else if (e.key === 'Home') ir(0); else if (e.key === 'End') ir(secs.length - 1);
 });
@@ -345,7 +375,7 @@ const DURA = .7;
 // Giro: arrastrar la obra hacia los lados (o flechas izquierda y derecha)
 let agarre = null, velGiro = 0, finGiro = -9;
 const sobreObra = e => {
-  if (!esc.ok || e.target.closest('a,summary,#familias')) return false;
+  if (!esc.ok || e.target.closest('a,summary,button,#familias')) return false;
   const x = (e.clientX / W * 2 - 1) * W / H, y = 1 - e.clientY / H * 2;
   return Math.abs(x - esc.x) < esc.r * 1.3 && Math.abs(y - esc.y) < esc.r * 1.2;
 };
@@ -387,7 +417,7 @@ let golpe = -9;
 addEventListener('click', e => {
   const ahora = performance.now() / 1000;
   if (ahora - finGiro < .25) return;
-  if (ahora - golpe < ESPERA || e.target.closest('a,summary,details')) return;
+  if (ahora - golpe < ESPERA || e.target.closest('a,summary,button,details')) return;
   const x = (e.clientX / W * 2 - 1) * W / H, y = 1 - e.clientY / H * 2;
   if (Math.hypot(x - esc.x, y - esc.y) > esc.r * 1.15) return;
   golpe = ahora; pide();
@@ -423,14 +453,14 @@ const cabezas = grupos.map(g => orden.find(o => o.grupo === g.id));
   if ((performance.getEntriesByType('navigation')[0] || {}).type === 'reload') try { const g = sessionStorage.getItem('pag'); if (g !== null) i = +g; } catch (e) {}
   pag = limita(i, 0, secs.length - 1) || 0; ponTexto(secs[pag]);
   try { sessionStorage.setItem('pag', pag); } catch (e) {}
+  ponUrl();
 }
-// La URL muestra el grupo en pantalla
-function ponUrl() {
+// El menú marca el grupo en pantalla y lo centra
+function ponNav() {
   const n = nav.find(n => (n.dataset.f || '') === famAnt);
   if (!n) return;
   const caja = n.parentNode;
   caja.scrollTo({ left: n.offsetLeft - (caja.clientWidth - n.offsetWidth) / 2, behavior: quieto ? 'auto' : 'smooth' });
-  if (n.hash !== location.hash && (famAnt || location.hash)) history.replaceState(null, '', n.hash);
 }
 // Centro y tamaño de la criatura, en unidades donde la pantalla mide 2 de alto
 const esc = { x: 0, y: 0, r: .5, ok: false };
@@ -473,7 +503,7 @@ function rotaPortada(act, ms) {
 function cuadro(ms) {
   pedido = false; const { act, idx } = estado(); ponTexto(act);
   const fam = act.dataset.f || '';
-  if (fam !== famAnt) { famAnt = fam; ponUrl(); nav.forEach(n => (n.dataset.f || '') === fam ? n.setAttribute('aria-current', 'true') : n.removeAttribute('aria-current')); }
+  if (fam !== famAnt) { famAnt = fam; ponNav(); nav.forEach(n => (n.dataset.f || '') === fam ? n.setAttribute('aria-current', 'true') : n.removeAttribute('aria-current')); }
   if (!gl || !cols) return;
   const t = quieto ? 1 : ms / 1000, asp = W / H;
   const lug = escenario(act, asp), paso = quieto || !esc.ok ? 1 : .07;
