@@ -15,7 +15,7 @@
 #lista .ver{position:relative;overflow:hidden}#lista .ver::after{content:"";position:absolute;inset:0;opacity:0;transition:opacity .2s;background:radial-gradient(150px circle at var(--mx,50%) var(--my,50%),#ffffff3d,#0000 70%)}#lista .ver:hover::after{opacity:1}}
 @media(prefers-reduced-motion:reduce){.boton.lleno::before,#elegir::before,#dGuardar.lleno::before{animation:none;display:none}.boton,#elegir{transition:none}}
 /* paso fluido entre la galería y el generador */
-@media(prefers-reduced-motion:no-preference){@view-transition{navigation:auto}
+@media(prefers-reduced-motion:no-preference){
 ::view-transition-old(root){animation:an-sale .22s ease-in both}::view-transition-new(root){animation:an-llega .34s cubic-bezier(.22,1,.36,1) both}}
 @keyframes an-sale{to{opacity:0;transform:scale(.985)}}@keyframes an-llega{from{opacity:0;transform:translateY(14px)}}
 @media(pointer:coarse){.caja{filter:none!important}}

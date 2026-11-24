@@ -1,6 +1,8 @@
 // Animaciones de la interfaz, adaptadas a este sitio a partir de React Bits (reactbits.dev), de David Haz:
 // DecryptedText, BlurText, CountUp, AnimatedList, ClickSpark, Magnet, StarBorder, SpotlightCard y LetterGlitch.
 // Licencia MIT + Commons Clause: el texto está en LICENCIA-REACT-BITS.txt.
+// la tipografía se pide aparte para que, si tarda, no retrase la página
+{ const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wdth,wght@75..100,300..800&family=Martian+Mono:wght@300..600&display=swap'; document.head.append(l); }
 window.Anim = (() => {
   const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches, fino = matchMedia('(hover: hover) and (pointer: fine)').matches;
   const LETRAS = '.:-=+*oO#%@', azar = () => LETRAS[Math.random() * LETRAS.length | 0], SUAVE = 'cubic-bezier(.22,1,.36,1)';
@@ -90,12 +92,16 @@ window.Anim = (() => {
     document.addEventListener('pointerover', e => { const a = e.target.closest && e.target.closest('#familias a,header nav a'); if (a && !vivas.has(a) && !(e.relatedTarget && a.contains(e.relatedTarget))) descifra(a, 300); });
   }
 
+  // el esqueleto de carga se retira cuando ya hay dibujo
+  let puesto = true;
+  function lista() { if (!puesto) return; puesto = false; document.documentElement.classList.add('lista'); const e = document.getElementById('esq'); if (e) { if (+getComputedStyle(e.firstElementChild).opacity < .05) e.remove(); else setTimeout(() => e.remove(), 220); } setTimeout(() => { const l = document.createElement("link"); l.rel = "prefetch"; l.href = document.getElementById("mar") ? "generador.html" : "index.html"; document.head.append(l); }, 2500); }
+
   // entrada de cada página de la galería
   let actual = [];
   function entra(sec) {
-    actual.forEach(corta); actual = []; if (quieto || !sec) return; const $$ = s => [...sec.querySelectorAll('.caja > ' + s)], T = $$('h1').concat($$('h2')), P = $$('p:not(.lat):not(.botones):not(.donde)');
+    actual.forEach(corta); actual = []; if (quieto || !sec || puesto) return; const $$ = s => [...sec.querySelectorAll('.caja > ' + s)], T = $$('h1').concat($$('h2')), P = $$('p:not(.lat):not(.botones):not(.donde)');
     T.forEach(e => descifra(e, 520)); P.forEach(e => enfoca(e, 110)); actual = T.concat(P);
     if (sec.id === 'indice') { escalona(sec.querySelectorAll('details'), 60); const n = [...sec.querySelectorAll('summary span')]; n.forEach(e => cuenta(e)); actual = actual.concat(n); }
   }
-  return { descifra, enfoca, escalona, cuenta, letras, chispa, entra };
+  return { lista, descifra, enfoca, escalona, cuenta, letras, chispa, entra };
 })();

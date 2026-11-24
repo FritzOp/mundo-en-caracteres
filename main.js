@@ -515,6 +515,12 @@ function ponNav(ya) {
   const caja = n.parentNode;
   caja.scrollTo({ left: n.offsetLeft - (caja.clientWidth - n.offsetWidth) / 2, behavior: quieto || ya ? 'auto' : 'smooth' });
 }
+// flechas del menú: solo salen si quedan opciones por ese lado
+{ const m = $('#familias'), izq = $('#nIzq'), der = $('#nDer');
+  const mira = () => { const a = m.scrollLeft > 4, b = m.scrollLeft + m.clientWidth < m.scrollWidth - 4; izq.hidden = !a; der.hidden = !b; m.classList.toggle('hay-izq', a); m.classList.toggle('hay-der', b); };
+  const mueve = s => m.scrollBy({ left: s * Math.max(140, m.clientWidth * .6), behavior: quieto ? 'auto' : 'smooth' });
+  izq.addEventListener('click', () => mueve(-1)); der.addEventListener('click', () => mueve(1));
+  m.addEventListener('scroll', mira, { passive: true }); addEventListener('resize', mira); if (window.ResizeObserver) new ResizeObserver(mira).observe(m); if (document.fonts) { document.fonts.ready.then(mira); document.fonts.addEventListener && document.fonts.addEventListener('loadingdone', mira); } mira(); }
 // el ancho del menú cambia cuando llega la tipografía o se redimensiona: se vuelve a centrar
 if (document.fonts) document.fonts.ready.then(() => ponNav(true));
 for (const ev of ['load', 'resize']) addEventListener(ev, () => ponNav(true));
@@ -558,8 +564,11 @@ function rotaPortada(act, ms) {
   if (!proxima.prog && !proxima.pend) empieza(proxima);
   if (ms > cambio && toma(proxima)) { ponPortada(proxima); proxima = null; cambio = 0; otro = false; } else if (otro) pide();
 }
+let dibujado = false;
 function cuadro(ms) {
   pedido = false; const { act, idx } = estado(); ponTexto(act);
+  // el texto ya está: se retira el esqueleto y las letras se animan a la vista
+  if (!dibujado) { dibujado = true; if (window.Anim) { Anim.lista(); Anim.entra(act); } }
   const fam = act.dataset.f || '';
   if (fam !== famAnt) { famAnt = fam; ponNav(); nav.forEach(n => (n.dataset.f || '') === fam ? n.setAttribute('aria-current', 'true') : n.removeAttribute('aria-current')); }
   if (!gl || !cols) return;

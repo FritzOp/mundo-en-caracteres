@@ -5,10 +5,42 @@
 <title>Generador | Mundo en caracteres</title>
 <link rel="icon" href="icono.svg" type="image/svg+xml"><link rel="icon" href="icono-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="icono-180.png"><meta name="theme-color" content="#01040c">
 <meta name="description" content="Convierte imágenes y modelos 3D en arte ASCII animado. Todo ocurre en tu navegador: nada se sube a ningún sitio.">
-<link rel="prefetch" href="index.html"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wdth,wght@75..100,300..800&family=Martian+Mono:wght@300..600&display=swap">
-<link rel="stylesheet" href="generador.css?v=35"><link rel="stylesheet" href="animaciones.css?v=3"></head>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="generador.css?v=36"><link rel="preload" as="style" href="animaciones.css?v=5"><script defer src="animaciones.js?v=8"></script><script defer src="motor.js?v=36"></script><script defer src="modelos.js?v=36"></script><script defer src="objeto.js?v=36"></script><script defer src="generador.js?v=37"></script>
+<style>html{background:#01040c}#esq{position:fixed;inset:0;z-index:40;background:#01040c;color:#9db3bb;font:500 14px/1.4 Consolas,"DejaVu Sans Mono",monospace;overflow:hidden;transition:opacity .18s}#esq>*{animation:eq-ve .25s .85s both}.lista #esq{opacity:0;pointer-events:none}
+#esq i{display:block;background:linear-gradient(100deg,#0c1d26 35%,#1d3d49 50%,#0c1d26 65%) 0 0/300% 100%;animation:eq-luz 1.5s linear infinite}
+#esq pre{margin:0;font:700 clamp(7px,var(--eq,1.05vw),15px)/1.12 Consolas,"DejaVu Sans Mono",monospace;color:#0000;background:linear-gradient(100deg,#17323d 38%,#ffb14a 50%,#17323d 62%) 0 0/300% 100%;-webkit-background-clip:text;background-clip:text;animation:eq-luz 2.2s linear infinite}
+#esq p{max-width:none;position:absolute;left:0;right:0;bottom:22px;margin:0;text-align:center;opacity:0;animation:eq-ve .4s 6s both}#esq p+p{bottom:44px;animation-delay:14s}#esq a{color:#ffb14a}
+@keyframes eq-ve{from{opacity:0;visibility:hidden}to{opacity:1;visibility:visible}}@keyframes eq-luz{from{background-position:130% 0}to{background-position:-30% 0}}
+@media(prefers-reduced-motion:reduce){#esq i,#esq pre{animation:none;background-position:50% 0}}
+@media(prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}
+#esq{display:grid;grid-template:58px 1fr/1fr 370px}.eq-cab{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;padding:0 20px;border-bottom:1px solid #17323d}.eq-cab div{display:flex;gap:20px}.eq-esc{display:grid;place-items:center;overflow:hidden}.eq-pan{border-left:1px solid #17323d;background:#06131b;padding:20px;display:flex;flex-direction:column;gap:14px;overflow:hidden}.eq-pan>*{flex:none}.eq-pan div{display:flex;gap:8px;flex-wrap:wrap}.eq-pan .eq-tar i{flex:1 0 30%}
+@media(max-width:900px){#esq{grid-template:auto minmax(290px,50svh) 1fr/1fr}.eq-cab{height:92px;flex-direction:column;align-items:flex-start;justify-content:center;gap:14px}.eq-esc{--eq:2.3vw}.eq-pan{border:0;border-top:1px solid #17323d}}</style></head>
 <body>
+<div id="esq" role="status" aria-label="Cargando el generador"><div class="eq-cab"><i style="width:172px;height:20px"></i><div><i style="width:62px;height:14px"></i><i style="width:78px;height:14px"></i></div></div><div class="eq-esc" aria-hidden="true"><pre>                    ***++
+             ######OOooo**+++==-
+          %%%@%%%%##OOooo***+++===-
+       %@@@@@@@@@%%###OOooo****+++==-:
+     #@@@@@@@@@@@@%%###OOOooooo***++=-:.
+    #%@@@@@@@@@@@%%%####OOOOOOOooo**+==:.
+   #%%@@@@@@@@@%%%######OOOOOOOOOoo**+=-:.
+  O#%%%%@%%%%%#####OOOOOOOOOOOOOooo**+=-:..
+ o##%%%%%%%%###OOOOOooooooOOooooo***+=--:...
+ ##%%%%%%%%###OOOoooooooooooooo**++==-::....
+ #%%%%%%%%####OOOOooooooooooo***++=--:......
+o##%%%%%%####OOOOOOOOOooooooo**++=--:........
+ OO#######OOOOOOOOOOOOOOOoooo**+==-:........
+ *oooOOOoooooooooooOOOOOOooo**++=--:........
+ =+***************oooooooo***++=--:.........
+  ==++++++++++++++*******+++==--::.........
+   --============+++++++===--::...........
+    :-------===========---::.............
+     .:::-----=======---::..............
+       ..:::----------::..............
+          ...::::-::::.............
+             ...................
+                    .....</pre></div><div class="eq-pan"><i style="width:58%;height:32px"></i><i style="width:96%;height:14px"></i><i style="width:70%;height:14px"></i><div><i style="width:126px;height:42px"></i><i style="width:112px;height:42px"></i></div><i style="width:100%;height:40px"></i><div><i style="width:58px;height:16px"></i><i style="width:92px;height:16px"></i><i style="width:64px;height:16px"></i><i style="width:84px;height:16px"></i></div><div class="eq-tar"><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i></div><div class="eq-tar"><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i></div></div><p>La conexión va lenta. Sigue cargando…</p><p>¿No avanza? <a href="">Volver a intentarlo</a></p></div>
+<link rel="stylesheet" href="generador.css?v=36"><link rel="stylesheet" href="animaciones.css?v=5">
 <header><a href="index.html" class="marca">Mundo en caracteres</a><nav aria-label="Secciones"><a href="index.html#indice">Galería</a><span aria-current="page">Generador</span></nav></header>
 <main>
  <section id="escena" aria-label="Dibujo">
@@ -103,5 +135,4 @@
  <p id="dTxt" class="nota" role="status"></p>
  <div class="fila"><button type="button" class="lleno" id="dGuardar">Guardar archivo</button><button type="button" id="dComp">Compartir</button><button type="button" id="dCopia">Copiar texto</button><button type="button" id="dVolver"></button></div>
 </dialog>
-<script src="animaciones.js?v=3"></script><script src="motor.js?v=35"></script><script src="modelos.js?v=35"></script><script src="objeto.js?v=35"></script><script src="generador.js?v=35"></script>
 </body></html>

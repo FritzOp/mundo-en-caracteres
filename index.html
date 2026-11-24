@@ -5,13 +5,47 @@
 <title>Mundo en caracteres</title>
 <link rel="icon" href="icono.svg" type="image/svg+xml"><link rel="icon" href="icono-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="icono-180.png"><meta name="theme-color" content="#01040c">
 <meta name="description" content="Galería y generador de arte ASCII: paisajes, objetos y criaturas dibujados con letras en vivo, y una herramienta para convertir tus imágenes y modelos 3D.">
-<link rel="prefetch" href="generador.html"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wdth,wght@75..100,300..800&family=Martian+Mono:wght@300..600&display=swap">
-<link rel="stylesheet" href="style.css?v=57"><link rel="stylesheet" href="animaciones.css?v=3"></head>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="style.css?v=60"><link rel="preload" as="style" href="animaciones.css?v=5"><script defer src="catalogo.js?v=58"></script><script defer src="criaturas.js?v=58"></script><script defer src="fantasia.js?v=58"></script><script defer src="escenas.js?v=58"></script><script defer src="escenas2.js?v=58"></script><script defer src="escenas3.js?v=58"></script><script defer src="leyendas.js?v=58"></script><script defer src="gestos.js?v=58"></script><script defer src="paisajes.js?v=58"></script><script defer src="animaciones.js?v=8"></script><script defer src="main.js?v=60"></script>
+<style>html{background:#01040c}#esq{position:fixed;inset:0;z-index:40;background:#01040c;color:#9db3bb;font:500 14px/1.4 Consolas,"DejaVu Sans Mono",monospace;overflow:hidden;transition:opacity .18s}#esq>*{animation:eq-ve .25s .45s both}.lista #esq{opacity:0;pointer-events:none}
+#esq i{display:block;background:linear-gradient(100deg,#0c1d26 35%,#1d3d49 50%,#0c1d26 65%) 0 0/300% 100%;animation:eq-luz 1.5s linear infinite}
+#esq pre{margin:0;font:700 clamp(7px,var(--eq,1.05vw),15px)/1.12 Consolas,"DejaVu Sans Mono",monospace;color:#0000;background:linear-gradient(100deg,#17323d 38%,#ffb14a 50%,#17323d 62%) 0 0/300% 100%;-webkit-background-clip:text;background-clip:text;animation:eq-luz 2.2s linear infinite}
+#esq p{max-width:none;position:absolute;left:0;right:0;bottom:22px;margin:0;text-align:center;opacity:0;animation:eq-ve .4s 6s both}#esq p+p{bottom:44px;animation-delay:14s}#esq a{color:#ffb14a}
+@keyframes eq-ve{from{opacity:0;visibility:hidden}to{opacity:1;visibility:visible}}@keyframes eq-luz{from{background-position:130% 0}to{background-position:-30% 0}}
+@media(prefers-reduced-motion:reduce){#esq i,#esq pre{animation:none;background-position:50% 0}}
+@media(prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}
+.eq-nav{position:absolute;top:18px;left:clamp(16px,4.5vw,88px);display:flex;gap:22px;white-space:nowrap}.eq-nav i{flex:none}
+.eq-txt{position:absolute;left:clamp(16px,4.5vw,88px);top:0;height:100%;width:clamp(220px,36vw,560px);display:flex;flex-direction:column;justify-content:center;gap:14px}.eq-txt div{display:flex;gap:10px;margin-top:8px}.eq-art{position:absolute;top:50%;left:70%;transform:translate(-50%,-50%)}
+@media(max-aspect-ratio:1/1){.eq-txt{width:calc(100% - 2*clamp(16px,4.5vw,88px));height:auto;top:auto;bottom:84px}.eq-art{left:50%;top:29%;--eq:2.5vw}}</style>
+</head>
 <body>
+<div id="esq" role="status" aria-label="Cargando la página"><div class="eq-nav"><i style="width:48px;height:14px"></i><i style="width:62px;height:14px"></i><i style="width:84px;height:14px"></i><i style="width:66px;height:14px"></i><i style="width:70px;height:14px"></i><i style="width:78px;height:14px"></i></div><div class="eq-txt"><i style="width:78%;height:clamp(38px,7vw,84px)"></i><i style="width:92%;height:clamp(38px,7vw,84px)"></i><i style="width:88%;height:16px;margin-top:8px"></i><i style="width:82%;height:16px"></i><i style="width:46%;height:16px"></i><div><i style="width:136px;height:46px"></i><i style="width:136px;height:46px"></i></div></div><div class="eq-art" aria-hidden="true"><pre>                    ***++
+             ######OOooo**+++==-
+          %%%@%%%%##OOooo***+++===-
+       %@@@@@@@@@%%###OOooo****+++==-:
+     #@@@@@@@@@@@@%%###OOOooooo***++=-:.
+    #%@@@@@@@@@@@%%%####OOOOOOOooo**+==:.
+   #%%@@@@@@@@@%%%######OOOOOOOOOoo**+=-:.
+  O#%%%%@%%%%%#####OOOOOOOOOOOOOooo**+=-:..
+ o##%%%%%%%%###OOOOOooooooOOooooo***+=--:...
+ ##%%%%%%%%###OOOoooooooooooooo**++==-::....
+ #%%%%%%%%####OOOOooooooooooo***++=--:......
+o##%%%%%%####OOOOOOOOOooooooo**++=--:........
+ OO#######OOOOOOOOOOOOOOOoooo**+==-:........
+ *oooOOOoooooooooooOOOOOOooo**++=--:........
+ =+***************oooooooo***++=--:.........
+  ==++++++++++++++*******+++==--::.........
+   --============+++++++===--::...........
+    :-------===========---::.............
+     .:::-----=======---::..............
+       ..:::----------::..............
+          ...::::-::::.............
+             ...................
+                    .....</pre></div><p>La conexión va lenta. Sigue cargando…</p><p>¿No avanza? <a href="">Volver a intentarlo</a></p></div>
+<link rel="stylesheet" href="style.css?v=60"><link rel="stylesheet" href="animaciones.css?v=5">
 <canvas id="mar" aria-hidden="true"></canvas>
 <div id="velo" aria-hidden="true"></div>
-<nav id="familias" aria-label="Grupos"></nav>
+<nav id="familias" aria-label="Grupos"></nav><button type="button" class="nflecha" id="nIzq" aria-label="Opciones anteriores" title="Opciones anteriores" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><button type="button" class="nflecha" id="nDer" aria-label="Más opciones" title="Más opciones" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
 <main>
 <section id="inicio" class="portada activa"><div class="caja">
  <h1>Mundo en<br>caracteres</h1>
@@ -23,5 +57,4 @@
 </main>
 <div id="avance" aria-hidden="true"><i></i></div><div id="cuenta" aria-hidden="true"></div><div id="espera" role="status">Dibujando…</div>
 <template id="creditos"><details class="pie"><summary>Fuentes y créditos</summary><p>Animaciones de la interfaz adaptadas de <a href="https://reactbits.dev">React Bits</a>. <a href="https://en.wikipedia.org/wiki/Ouroboros">Uróboros</a>, <a href="https://en.wikipedia.org/wiki/Lernaean_Hydra">Hidra</a>, <a href="https://cts.perseids.org/read/greekLit/tlg0016/tlg001/perseus-eng2/2.73.1-2.73.3">Heródoto 2.73</a>, <a href="https://en.wikipedia.org/wiki/Kraken">Kraken</a>, <a href="https://encyclopedia.pub/entry/28705">Quetzalcóatl</a>, <a href="https://en.wikipedia.org/wiki/Aspidochelone">Aspidoquelonio</a>, <a href="https://www.jewishmuseum.cz/novinka/the-golem-of-prague-the-legend-of-rabbi-loew-s-creation">Gólem</a>, <a href="https://cob.silverchair.com/jeb/article/54/3/535/21635/Acoustic-Location-of-Prey-by-Barn-Owls-Tyto-Alba">Lechuza</a>, <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC1691047">Morfo</a>, <a href="https://phys.org/news/2010-04-cobras-hood-flares.html">Cobra</a>. Inspirado en un <a href="https://www.instagram.com/reel/DgG_1Etxyms/">reel de ethan</a> sobre arte ASCII en Python. Las obras de este sitio son originales.</p></details></template>
-<script src="catalogo.js?v=57"></script><script src="criaturas.js?v=57"></script><script src="fantasia.js?v=57"></script><script src="escenas.js?v=57"></script><script src="escenas2.js?v=57"></script><script src="escenas3.js?v=57"></script><script src="leyendas.js?v=57"></script><script src="gestos.js?v=57"></script><script src="paisajes.js?v=57"></script><script src="animaciones.js?v=3"></script><script src="main.js?v=57"></script>
 </body></html>

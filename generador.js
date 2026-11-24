@@ -7,7 +7,7 @@ const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const lienzo = $('#lienzo'); let motor;
 let avisoT = 0;
 function avisa(t, mal) { const a = $('#aviso'); a.textContent = t; a.className = 've' + (mal ? ' mal' : ''); clearTimeout(avisoT); avisoT = setTimeout(() => a.className = '', mal ? 7000 : 2600); }
-try { motor = new MotorAscii(lienzo, { guardar: true }); } catch (e) { avisa(e.message, true); $('#etiqueta').textContent = e.message; $$('button,input,select').forEach(b => b.disabled = true); return; }
+try { motor = new MotorAscii(lienzo, { guardar: true }); } catch (e) { avisa(e.message, true); $('#etiqueta').textContent = e.message; $$('button,input,select').forEach(b => b.disabled = true); A.lista(); return; }
 
 // ---------- dibujo actual ----------
 // D = {id, nombre, tipo, ajustes, creado, imagen:{src} | modelo:{partes,eje,medidas}, pistas, ejemplo}
@@ -446,6 +446,5 @@ const bucle = ms => {
 };
 // si el móvil quita la gráfica, se monta otra vez el mismo dibujo
 lienzo.addEventListener('webglcontextlost', e => e.preventDefault()); lienzo.addEventListener('webglcontextrestored', async () => { try { motor._arma(); motor.rk = ''; if (D) await muestra(false); } catch (e) { avisa('Recarga la página para ver el dibujo.', true); } });
-(async () => { try { let g = null; try { const id = localStorage.getItem('ultimo'); g = id && await tx('readonly', s => s.get(id)); } catch (e) {} try { if (g) await restaura(g); } catch (e) { g = null; } if (!g) await ejemplo(); } catch (e) { avisa(e.message, true); } requestAnimationFrame(bucle); await lista(); A.escalona($$('#lista li')); })();
-A.descifra($('h1'), 620); A.escalona($('#p-estilo').children, 120); A.escalona($$('#barraEscena button'), 200);
+(async () => { try { let g = null; try { const id = localStorage.getItem('ultimo'); g = id && await tx('readonly', s => s.get(id)); } catch (e) {} try { if (g) await restaura(g); } catch (e) { g = null; } if (!g) await ejemplo(); } catch (e) { avisa(e.message, true); } requestAnimationFrame(bucle); requestAnimationFrame(() => requestAnimationFrame(() => { A.lista(); A.descifra($('h1'), 620); A.escalona($('[role=tabpanel]:not([hidden])').children, 80); A.escalona($$('#barraEscena button'), 120); })); await lista(); A.escalona($$('#lista li')); })();
 })();
