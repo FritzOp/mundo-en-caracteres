@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bestiario de caracteres</title>
+<meta name="description" content="Veintiséis criaturas reales, fantásticas y mitológicas en ASCII 3D. El cursor es la linterna.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wdth,wght@75..100,300..800&family=Martian+Mono:wght@300..600&display=swap">
+<link rel="stylesheet" href="style.css?v=16"></head>
+<body>
+<canvas id="mar" aria-hidden="true"></canvas>
+<nav id="familias" aria-label="Familias"><a href="#inicio">Inicio</a><a href="#animales-reales" data-f="reales">Animales reales</a><a href="#fauna-fantastica" data-f="fauna">Fauna fantástica</a><a href="#monstruos" data-f="monstruos">Monstruos</a><a href="#mitologia" data-f="mitos">Mitología</a></nav>
+<main>
+<section id="inicio" data-c="dragon" class="portada"><div class="caja">
+ <h1>Bestiario de<br>caracteres</h1>
+ <p class="guia">Veintiséis criaturas reales, inventadas y legendarias, dibujadas con letras y calculadas en vivo. Tu cursor es la linterna.</p>
+</div></section>
+<section id="indice" data-c="dragon" class="indice"><div class="caja">
+<div><h3>Animales reales</h3><ul><li><a href="#lechuza">Lechuza común</a></li><li><a href="#morpho">Mariposa morfo</a></li><li><a href="#cobra">Cobra real</a></li><li><a href="#nautilo">Nautilo</a></li><li><a href="#ctenoforo">Ctenóforo</a></li><li><a href="#sifonoforo">Sifonóforo</a></li><li><a href="#vampiro">Calamar vampiro</a></li><li><a href="#medusa">Medusa corona</a></li><li><a href="#tubos">Gusano de tubo gigante</a></li><li><a href="#arpa">Esponja arpa</a></li><li><a href="#dumbo">Pulpo dumbo</a></li><li><a href="#caracol">Pez caracol</a></li></ul></div>
+<div><h3>Fauna fantástica</h3><ul><li><a href="#ciervo">Ciervo de luna</a></li><li><a href="#ballena">Ballena de nubes</a></li><li><a href="#zorro">Zorro de brasa</a></li></ul></div>
+<div><h3>Monstruos</h3><ul><li><a href="#dragon">Dragón</a></li><li><a href="#limo">Limo</a></li><li><a href="#mimico">Mímico</a></li><li><a href="#espectro">Espectro</a></li></ul></div>
+<div><h3>Mitología</h3><ul><li><a href="#hidra">Hidra de Lerna</a></li><li><a href="#uroboros">Uróboros</a></li><li><a href="#fenix">Fénix</a></li><li><a href="#kraken">Kraken</a></li><li><a href="#quetzal">Quetzalcóatl</a></li><li><a href="#aspido">Aspidoquelonio</a></li><li><a href="#golem">Gólem de Praga</a></li></ul></div>
+</div></section>
+<section id="lechuza" data-c="lechuza" data-f="reales"><span id="animales-reales"></span><div class="caja"><h2>Lechuza común</h2><p class="lat"><i>Tyto alba</i></p>
+ <p>Caza a oscuras guiándose solo por el oído, con un error menor de un grado. Sus oídos son asimétricos y el disco de la cara les lleva el sonido como una antena.</p></div></section>
+<section id="morpho" data-c="morpho" data-f="reales"><div class="caja"><h2>Mariposa morfo</h2><p class="lat"><i>Morpho</i></p>
+ <p>Su azul no es un pigmento: lo crean estructuras diminutas en las escamas, por interferencia y difracción de la luz.</p></div></section>
+<section id="cobra" data-c="cobra" data-f="reales"><div class="caja"><h2>Cobra real</h2><p class="lat"><i>Ophiophagus hannah</i></p>
+ <p>Para parecer más grande abre las costillas del cuello, que tensan la piel suelta como un paraguas.</p></div></section>
+<section id="nautilo" data-c="nautilo" data-f="reales"><div class="caja"><h2>Nautilo</h2><p class="lat"><i>Nautilus pompilius</i>, 400 m</p>
+ <p>Su concha es una espiral que crece sin cambiar de forma. Añade cámaras a medida que se hace grande y las usa para flotar, llenándolas de gas o de líquido.</p></div></section>
+<section id="ctenoforo" data-c="ctenoforo" data-f="reales"><div class="caja"><h2>Ctenóforo</h2><p class="lat"><i>Bathocyroe fosteri</i>, 500 m</p>
+ <p>Avanza con ocho hileras de peines diminutos. Al batir descomponen la luz y parecen recorridos por un arcoíris.</p></div></section>
+<section id="sifonoforo" data-c="sifonoforo" data-f="reales"><div class="caja"><h2>Sifonóforo</h2><p class="lat"><i>Praya dubia</i>, 700 m</p>
+ <p>Parece un solo animal y es una colonia de muchos individuos en fila, cada uno con su tarea: nadar, cazar o digerir. Puede superar los 40 metros.</p></div></section>
+<section id="vampiro" data-c="vampiro" data-f="reales"><div class="caja"><h2>Calamar vampiro</h2><p class="lat"><i>Vampyroteuthis infernalis</i>, 900 m</p>
+ <p>Ni calamar ni vampiro: tiene un orden propio y come restos que caen de la superficie. Si se asusta, se envuelve en la capa que une sus brazos.</p></div></section>
+<section id="medusa" data-c="medusa" data-f="reales"><div class="caja"><h2>Medusa corona</h2><p class="lat"><i>Atolla wyvillei</i>, 2000 m</p>
+ <p>Cuando un depredador la atrapa, lanza destellos en círculo para atraer a otro depredador más grande. Los biólogos lo llaman alarma antirrobo.</p></div></section>
+<section id="tubos" data-c="tubos" data-f="reales"><div class="caja"><h2>Gusano de tubo gigante</h2><p class="lat"><i>Riftia pachyptila</i>, 2500 m</p>
+ <p>Vive junto a chimeneas hidrotermales y no tiene boca ni estómago: lo alimentan bacterias que lleva dentro. Cada penacho se asoma a su propio ritmo.</p></div></section>
+<section id="arpa" data-c="arpa" data-f="reales"><div class="caja"><h2>Esponja arpa</h2><p class="lat"><i>Chondrocladia lyra</i>, 3300 m</p>
+ <p>Es una esponja carnívora. Atrapa crustáceos con las ramas verticales, que parecen cuerdas, y los digiere poco a poco.</p></div></section>
+<section id="dumbo" data-c="dumbo" data-f="reales"><div class="caja"><h2>Pulpo dumbo</h2><p class="lat"><i>Grimpoteuthis</i>, 4000 m</p>
+ <p>Nada batiendo las dos aletas que le salen del manto, como si fueran orejas. Vive cerca del fondo, a miles de metros de profundidad.</p></div></section>
+<section id="caracol" data-c="caracol" data-f="reales"><div class="caja"><h2>Pez caracol</h2><p class="lat"><i>Pseudoliparis swirei</i>, 7500 m</p>
+ <p>Uno de los peces que viven a mayor profundidad. No tiene escamas y su cuerpo blando aguanta la presión de la fosa de las Marianas.</p></div></section>
+<section id="ciervo" data-c="ciervo" data-f="fauna"><span id="fauna-fantastica"></span><div class="caja"><h2>Ciervo de luna</h2><p class="lat">Especie inventada para este bestiario</p>
+ <p>Pasta de noche en los claros y guarda la luna entre las astas. Cuando la suelta, amanece.</p></div></section>
+<section id="ballena" data-c="ballena" data-f="fauna"><div class="caja"><h2>Ballena de nubes</h2><p class="lat">Especie inventada para este bestiario</p>
+ <p>Filtra vapor en vez de kril. Los pueblos del valle saben que viene porque llueve solo bajo su sombra.</p></div></section>
+<section id="zorro" data-c="zorro" data-f="fauna"><div class="caja"><h2>Zorro de brasa</h2><p class="lat">Especie inventada para este bestiario</p>
+ <p>Nace en las hogueras mal apagadas. Duerme abrazado a su cola para que no se le extinga.</p></div></section>
+<section id="dragon" data-c="dragon" data-f="monstruos"><span id="monstruos"></span><div class="caja"><h2>Dragón</h2><p class="lat">Monstruo de fantasía</p>
+ <p>Duerme sobre lo que otros quisieron guardar. Lleva una brasa en la garganta y, cuando abre la boca, la oscuridad retrocede.</p></div></section>
+<section id="limo" data-c="limo" data-f="monstruos"><div class="caja"><h2>Limo</h2><p class="lat">Monstruo de fantasía</p>
+ <p>Disuelve lo que toca y conserva lo que brilla. Mira con dos ojos que no son del mismo dueño.</p></div></section>
+<section id="mimico" data-c="mimico" data-f="monstruos"><div class="caja"><h2>Mímico</h2><p class="lat">Monstruo de fantasía</p>
+ <p>Imita un cofre con tanta paciencia que a veces guarda oro de verdad, de visitantes anteriores.</p></div></section>
+<section id="espectro" data-c="espectro" data-f="monstruos"><div class="caja"><h2>Espectro</h2><p class="lat">Monstruo de fantasía</p>
+ <p>Quedan la capa y las manos. Lo demás se fue hace tanto que ya nadie recuerda a quién pertenecían.</p></div></section>
+<section id="hidra" data-c="hidra" data-f="mitos"><span id="mitologia"></span><div class="caja"><h2>Hidra de Lerna</h2><p class="lat">Grecia. Nueve cabezas según Alceo, hacia 600 a.&nbsp;C.</p>
+ <p>Por cada cabeza aplastada crecían dos. Heracles la venció cuando Yolao quemó los cuellos para que no rebrotaran. Simónides le contó cincuenta cabezas; aquí son nueve y la del centro es la inmortal.</p></div></section>
+<section id="uroboros" data-c="uroboros" data-f="mitos"><div class="caja"><h2>Uróboros</h2><p class="lat">Egipto, siglo XIV a.&nbsp;C.</p>
+ <p>Una de las imágenes más antiguas que se conocen está en la tumba de Tutankamón, en un texto sobre Ra y su unión con Osiris en el inframundo.</p></div></section>
+<section id="fenix" data-c="fenix" data-f="mitos"><div class="caja"><h2>Fénix</h2><p class="lat">Heliópolis, según Heródoto</p>
+ <p>Heródoto contó que volvía cada 500 años, roja y dorada, con el tamaño y la forma de un águila. Él mismo aclaró que solo la había visto en pinturas.</p></div></section>
+<section id="kraken" data-c="kraken" data-f="mitos"><div class="caja"><h2>Kraken</h2><p class="lat">Noruega y mares del norte</p>
+ <p>Francesco Negri lo describió en 1700 como un pez con muchos brazos. Erik Pontoppidan lo hizo famoso medio siglo después. La leyenda podría venir de avistamientos de calamares gigantes.</p></div></section>
+<section id="quetzal" data-c="quetzal" data-f="mitos"><div class="caja"><h2>Quetzalcóatl</h2><p class="lat">Mesoamérica. Serpiente emplumada, en náhuatl</p>
+ <p>Su culto más antiguo documentado está en Teotihuacán, hacia el cambio de era. Los mexicas lo veneraban como la estrella de la mañana y de la tarde.</p></div></section>
+<section id="aspido" data-c="aspido" data-f="mitos"><div class="caja"><h2>Aspidoquelonio</h2><p class="lat"><i>Physiologus</i> y bestiarios medievales</p>
+ <p>Unas veces ballena y otras tortuga. Los marineros confunden su lomo con una isla, desembarcan y se hunden con él.</p></div></section>
+<section id="golem" data-c="golem" data-f="mitos"><div class="caja"><h2>Gólem de Praga</h2><p class="lat">Leyenda judía, difundida en el siglo XIX</p>
+ <p>El rabino Loew lo modeló con barro del Moldava. En su frente decía <i>emet</i>, verdad. Al borrar la primera letra quedaba <i>met</i>, muerte, y se detenía.</p>
+ <details class="pie"><summary>Fuentes y créditos</summary><p><a href="https://en.wikipedia.org/wiki/Ouroboros">Uróboros</a>, <a href="https://en.wikipedia.org/wiki/Lernaean_Hydra">Hidra</a>, <a href="https://cts.perseids.org/read/greekLit/tlg0016/tlg001/perseus-eng2/2.73.1-2.73.3">Heródoto 2.73</a>, <a href="https://en.wikipedia.org/wiki/Kraken">Kraken</a>, <a href="https://encyclopedia.pub/entry/28705">Quetzalcóatl</a>, <a href="https://en.wikipedia.org/wiki/Aspidochelone">Aspidoquelonio</a>, <a href="https://www.jewishmuseum.cz/novinka/the-golem-of-prague-the-legend-of-rabbi-loew-s-creation">Gólem</a>, <a href="https://cob.silverchair.com/jeb/article/54/3/535/21635/Acoustic-Location-of-Prey-by-Barn-Owls-Tyto-Alba">Lechuza</a>, <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC1691047">Morfo</a>, <a href="https://phys.org/news/2010-04-cobras-hood-flares.html">Cobra</a>. Inspirado en un <a href="https://www.instagram.com/reel/DgG_1Etxyms/">reel de ethan</a> sobre arte ASCII en Python. Las criaturas de este sitio son originales.</p></details></div></section>
+</main>
+<script src="criaturas.js?v=16"></script><script src="fantasia.js?v=16"></script><script src="main.js?v=16"></script>
+</body></html>
