@@ -12,7 +12,7 @@ const obras = OBRAS.filter(o => {
 const slug = { reales: 'animales-reales', fauna: 'fauna-fantastica', monstruos: 'monstruos', mitos: 'mitologia' }, vistos = new Set();
 const ancla1 = id => { if (!id || vistos.has(id)) return ''; vistos.add(id); return `<span id="${id}"></span>`; };
 const grupos = GRUPOS.filter(g => obras.some(o => o.grupo === g.id));
-$('#familias').innerHTML = '<a href="#inicio">Inicio</a>' + grupos.map(g => `<a href="#${g.id}" data-f="${g.id}">${g.nombre}</a>`).join('');
+$('#familias').innerHTML = '<a href="#inicio">Inicio</a>' + grupos.map(g => `<a href="#${g.id}" data-f="${g.id}">${g.nombre}</a>`).join('') + '<a href="generador.html" data-f="-">Generador</a>';
 $('#indice .caja').innerHTML = grupos.map(g => {
   const l = obras.filter(o => o.grupo === g.id);
   return `<details name="indice"><summary>${g.nombre}<span>${l.length}</span></summary><ul>${l.map(o => `<li><a href="#${o.id}">${o.titulo}</a></li>`).join('')}</ul></details>`;
@@ -20,7 +20,8 @@ $('#indice .caja').innerHTML = grupos.map(g => {
 $('main').insertAdjacentHTML('beforeend', grupos.flatMap(g => obras.filter(o => o.grupo === g.id)).map(o =>
   `<section id="${o.id}" data-c="${o.id}" data-f="${o.grupo}">${ancla1(o.grupo)}${ancla1(slug[o.fondo])}<div class="caja"><h2>${o.titulo}</h2><p class="lat">${o.dato || ''}</p><p>${o.texto || ''}</p><button type="button" class="compartir">Compartir</button></div></section>`).join(''));
 $('main > section:last-child .caja').append($('#creditos').content);
-$$('#inicio,#indice').forEach(s => s.dataset.c = obras[0].id);
+PAISAJES.forEach(p => C[p.id] = p);
+$$('#inicio,#indice').forEach(s => s.dataset.c = PAISAJES[0].id);
 
 const VERT = `#version 300 es
 void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.-1.,0,1);}`;
@@ -217,10 +218,13 @@ function empieza(c) {
     im.onerror = () => console.error('No se pudo cargar', c.imagen);
     im.src = c.imagen;
   }
-  c.pend = inicia(c.imagen ? IMG : fuente(c.codigo));
+  c.pend = inicia(c.imagen ? IMG : c.paisaje ? fuentePaisaje(c.codigo) : fuente(c.codigo));
 }
 const compila = frag => termina(inicia(frag));
 // si la obra aplica el giro por su cuenta, el motor no lo repite
+const POSTP = `
+void main(){vec2 u=(gl_FragCoord.xy/res*2.-1.)*vec2(aspecto,1.);vec3 c=paisaje(u,tiempo);float l=length(u-lampara);c*=.88+.5*exp(-l*l*6.);sal=vec4(max(c,0.),1.);}`;
+const fuentePaisaje = cod => PRE.replace('#line 1\n', '') + PAISAJE_LIB + '\n#line 1\n' + cod + POSTP;
 const fuente = cod => PRE + cod + (/gira\(giro\)/.test(cod) ? POST.replace('p.xz*=gira(giro);', '') : POST);
 const arma = codigo => compila(PRE + codigo + POST);
 
@@ -293,6 +297,7 @@ function ponTexto(sec) {
   textoAct = sec;
   secs.forEach(s => s.classList.toggle('activa', s === sec));
   const k = obrasSec.indexOf(sec);
+  document.body.classList.toggle('en-inicio', k < 0);
   cuenta.textContent = k < 0 ? '' : (k + 1) + ' / ' + obrasSec.length;
   barra.style.transform = 'scaleY(' + (pag / (secs.length - 1)) + ')';
   mideTexto();
@@ -387,6 +392,7 @@ addEventListener('keydown', e => {
   if (d) { e.preventDefault(); ir(pag + d); } else if (e.key === 'Home') ir(0); else if (e.key === 'End') ir(secs.length - 1);
 });
 const fondo = [...FONDOS.criaturas];
+
 const nav = $$('#familias a'); let famAnt = null;
 // Devuelve el programa, o null mientras la GPU lo compila
 function toma(c) {
@@ -401,7 +407,7 @@ const DURA = .7;
 // Giro: arrastrar la obra hacia los lados (o flechas izquierda y derecha)
 let agarre = null, velGiro = 0, finGiro = -9;
 const sobreObra = e => {
-  if (!esc.ok || e.target.closest('a,summary,button,#familias')) return false;
+  if (!esc.ok || C[secs[pag].dataset.c].paisaje || e.target.closest('a,summary,button,#familias')) return false;
   const x = (e.clientX / W * 2 - 1) * W / H, y = 1 - e.clientY / H * 2;
   return Math.abs(x - esc.x) < esc.r * 1.3 && Math.abs(y - esc.y) < esc.r * 1.2;
 };
@@ -447,7 +453,7 @@ function toca() {
 addEventListener('click', e => {
   if (performance.now() / 1000 - finGiro < .25 || e.target.closest('a,summary,button,details')) return;
   const x = (e.clientX / W * 2 - 1) * W / H, y = 1 - e.clientY / H * 2;
-  if (Math.hypot(x - esc.x, y - esc.y) < esc.r * 1.2) toca();
+  if (C[secs[pag].dataset.c].paisaje || Math.hypot(x - esc.x, y - esc.y) < esc.r * 1.2) toca();
 });
 addEventListener('keydown', e => { if (e.key === 'Enter' && !(e.target.closest && e.target.closest('a,summary,button'))) toca(); });
 // Estado del gesto de una obra en este instante
@@ -525,22 +531,24 @@ function escenario(sec, asp) {
 const portadas = secs.filter(s => !s.dataset.f), rotulo = $('#enportada');
 let bolsa = [], proxima = null, cambio = 0;
 const saca = () => {
-  if (!bolsa.length) { bolsa = orden.slice(); for (let i = bolsa.length - 1; i > 0; i--) { const k = Math.random() * (i + 1) | 0; [bolsa[i], bolsa[k]] = [bolsa[k], bolsa[i]]; } if (bolsa[bolsa.length - 1].id === portadas[0].dataset.c) bolsa.reverse(); }
+  if (!bolsa.length) { bolsa = PAISAJES.slice(); for (let i = bolsa.length - 1; i > 0; i--) { const k = Math.random() * (i + 1) | 0; [bolsa[i], bolsa[k]] = [bolsa[k], bolsa[i]]; } if (bolsa[bolsa.length - 1].id === portadas[0].dataset.c) bolsa.reverse(); }
   return bolsa.pop();
 };
 const seccionDe = id => secs.find(s => s.dataset.f && s.dataset.c === id);
 function ponPortada(c) {
   portadas.forEach(s => s.dataset.c = c.id);
-  rotulo.textContent = $('h2', seccionDe(c.id)).textContent; rotulo.href = '#' + c.id;
+  rotulo.textContent = c.mundo + ': ' + c.nombre;
 }
 ponPortada(saca());
+$('#otro').addEventListener('click', () => { cambio = 1; otro = true; pide(); });
+let otro = false;
 function rotaPortada(act, ms) {
   const c = C[act.dataset.c];
-  if (act.dataset.f || quieto || agarre || ms / 1000 - (c.golpe || -99) < 4) { cambio = 0; return; }
-  if (!cambio || de !== c || hacia) { cambio = ms + 5000; return; }  // cuenta desde que ya se ve
+  if (act.dataset.f || (quieto && !otro) || agarre || (!otro && ms / 1000 - (c.golpe || -99) < 4)) { cambio = 0; return; }
+  if (otro) { if (!hacia) cambio = 1; } else if (!cambio || de !== c || hacia) { cambio = ms + 11000; return; }  // cuenta desde que ya se ve
   if (!proxima) proxima = saca();
   if (!proxima.prog && !proxima.pend) empieza(proxima);
-  if (ms > cambio && toma(proxima)) { ponPortada(proxima); proxima = null; cambio = 0; }
+  if (ms > cambio && toma(proxima)) { ponPortada(proxima); proxima = null; cambio = 0; otro = false; } else if (otro) pide();
 }
 function cuadro(ms) {
   pedido = false; const { act, idx } = estado(); ponTexto(act);

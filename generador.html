@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Generador | Mundo en caracteres</title>
+<meta name="description" content="Convierte imágenes y modelos 3D en arte ASCII animado. Todo ocurre en tu navegador: nada se sube a ningún sitio.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wdth,wght@75..100,300..800&family=Martian+Mono:wght@300..600&display=swap">
+<link rel="stylesheet" href="generador.css?v=19"></head>
+<body>
+<header><a href="index.html" class="marca">Mundo en caracteres</a><nav aria-label="Secciones"><a href="index.html#indice">Galería</a><span aria-current="page">Generador</span></nav></header>
+<main>
+ <section id="escena" aria-label="Dibujo">
+  <canvas id="lienzo" tabindex="0" aria-label="Dibujo ASCII. Arrastra para girarlo, usa la rueda para acercar y tócalo para que reaccione."></canvas>
+  <div id="soltar" hidden><p>Suelta aquí la imagen o el modelo</p></div>
+  <div id="pincel" hidden role="dialog" aria-label="Marcar el objeto">
+   <p>Pinta encima del objeto. No hace falta cubrirlo entero: el contorno se ajusta solo.</p>
+   <canvas></canvas>
+   <div class="fila"><button type="button" id="pObjeto">Es objeto</button><button type="button" id="pFondo">Es fondo</button><button type="button" id="pAuto">Automático</button><button type="button" id="pNo">Cancelar</button><button type="button" id="pSi" class="lleno">Listo</button></div>
+  </div>
+  <p id="etiqueta"></p>
+  <div id="aviso" role="status"></div>
+ </section>
+ <section id="panel" aria-label="Controles">
+  <div class="grupo">
+   <h1>Generador</h1>
+   <p class="nota">Sube una imagen (PNG, JPG, WebP, GIF) o un modelo 3D (GLB, OBJ, STL, PLY). No sale de tu navegador.</p>
+   <div class="fila"><button type="button" class="lleno" id="elegir">Elegir archivo</button><button type="button" id="nuevo">Ver ejemplo</button></div>
+   <input type="file" id="archivo" hidden accept="image/png,image/jpeg,image/webp,image/gif,image/bmp,image/avif,.glb,.obj,.stl,.ply,.json,.mundo">
+   <label class="campo">Nombre<input id="nombre" maxlength="60" autocomplete="off" spellcheck="false"></label>
+   <p id="contexto" class="nota"></p>
+  </div>
+  <div class="grupo"><h2>Animación</h2>
+   <div class="fila"><button type="button" id="auto">Según el contenido</button><button type="button" id="quieto">Sin animación</button></div>
+   <div id="anims" class="chips" role="group" aria-label="Animaciones"></div>
+   <div id="cObjeto" class="objeto"><label class="campo">Qué se mueve<select id="mueve"><option value="objeto">Solo el objeto</option><option value="todo">Toda la imagen</option></select></label><button type="button" id="marcar">Marcar el objeto</button></div>
+   <label class="check"><input type="checkbox" id="contextoOn"> Mover agua, fuego, plantas y cielo de la imagen</label>
+   <div id="dAnim"></div>
+  </div>
+  <div class="grupo"><h2>Letras y color</h2>
+   <label class="campo">Letras<select id="rampa"></select></label>
+   <label class="campo" id="cPropia" hidden>Tus letras, de oscuro a claro<input id="propia" maxlength="64" autocomplete="off" spellcheck="false"></label>
+   <label class="campo">Color<select id="color"></select></label>
+   <div class="fila"><label class="campo corto" id="cTinte" hidden>Tinte<input type="color" id="tinte"></label><label class="campo corto">Fondo<input type="color" id="fondo"></label></div>
+   <label class="check"><input type="checkbox" id="invertir"> Invertir luces</label>
+   <label class="check" id="cSinFondo"><input type="checkbox" id="sinFondo"> Quitar el fondo</label>
+   <button type="button" id="fiel">Volver a los colores originales</button>
+   <div id="dForma"></div>
+  </div>
+  <div class="grupo"><h2>Descargar</h2>
+   <div class="descargas">
+    <button type="button" data-baja="html"><b>Página animada</b><span>.html que se abre sin internet</span></button>
+    <button type="button" data-baja="png"><b>Imagen</b><span>.png del momento actual</span></button>
+    <button type="button" data-baja="video"><b>Video</b><span>6 segundos</span></button>
+    <button type="button" data-baja="txt"><b>Texto</b><span>.txt para copiar y pegar</span></button>
+    <button type="button" data-baja="proyecto"><b>Proyecto</b><span>.json para seguir editando</span></button>
+   </div>
+  </div>
+ </section>
+ <section id="guardados" aria-label="Tus dibujos">
+  <div class="cab"><h2>Tus dibujos</h2><p id="estado" class="nota"></p><div class="fila"><button type="button" id="copia">Descargar copia de todos</button><button type="button" id="recupera">Recuperar una copia</button></div></div>
+  <ul id="lista"></ul>
+  <details><summary>¿Dónde se guardan y cuándo se pierden?</summary>
+   <p>En este navegador y en este dispositivo. Siguen ahí aunque cierres la página o apagues el equipo.</p>
+   <p>Se borran si limpias los datos del sitio, usas una ventana privada, cambias de navegador o el dispositivo se queda sin espacio. Safari puede borrarlos tras una semana sin visitar el sitio. En esos casos no hay servidor del que recuperarlos.</p>
+   <p>Para no perderlos, descarga el proyecto o la copia de todos. Ese archivo se puede abrir aquí más adelante, también en otro equipo.</p></details>
+ </section>
+</main>
+<script src="motor.js?v=19"></script><script src="modelos.js?v=19"></script><script src="objeto.js?v=19"></script><script src="generador.js?v=19"></script>
+</body></html>

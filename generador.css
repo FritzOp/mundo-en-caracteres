@@ -1,0 +1,35 @@
+/* El dibujo manda: ocupa todo lo que deja el panel. Debajo, la estantería de guardados. */
+:root{--abismo:#01040c;--panel:#06131b;--borde:#17323d;--hueso:#f1e9dc;--bruma:#9db3bb;--ambar:#ffb14a;--cian:#7fe8dd;--mal:#ff8d7a;--titulo:"Bricolage Grotesque",system-ui,sans-serif;--mono:"Martian Mono",Consolas,monospace;color-scheme:dark}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--abismo);color:var(--hueso);font:400 1rem/1.5 var(--titulo)}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px 20px;flex-wrap:wrap;padding:12px 20px;border-bottom:1px solid var(--borde)}
+.marca{font-stretch:75%;font-weight:800;font-size:1.25rem;color:var(--hueso);text-decoration:none}nav{display:flex;gap:20px;font:500 .76rem var(--mono)}nav a,nav span{color:var(--bruma);text-decoration:none;padding:8px 0}nav a:hover{color:var(--hueso)}nav span{color:var(--ambar);border-bottom:2px solid var(--ambar)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 370px;grid-template-areas:"e p" "g p"}
+#escena{grid-area:e;position:relative;height:calc(100vh - 58px);height:calc(100dvh - 58px);min-height:420px}
+#lienzo{position:absolute;inset:0;width:100%;height:100%;cursor:grab;outline-offset:-3px}#lienzo:active{cursor:grabbing}
+#etiqueta{position:absolute;left:20px;bottom:14px;margin:0;font:500 .74rem var(--mono);color:var(--bruma);pointer-events:none}
+#soltar{position:absolute;inset:14px;display:grid;place-items:center;border:2px dashed var(--ambar);background:#01040cd0;pointer-events:none}#soltar p{font-size:1.5rem;font-weight:700}
+#aviso{position:absolute;left:50%;top:18px;transform:translateX(-50%);max-width:calc(100% - 32px);padding:10px 16px;background:var(--panel);border:1px solid var(--borde);opacity:0;transition:opacity .2s;pointer-events:none;overflow-wrap:anywhere}#aviso.ve{opacity:1}#aviso.mal{border-color:var(--mal);color:var(--mal)}
+#panel{grid-area:p;border-left:1px solid var(--borde);background:var(--panel);height:calc(100vh - 58px);height:calc(100dvh - 58px);overflow-y:auto;position:sticky;top:0;scrollbar-width:thin}
+.grupo{display:grid;gap:12px;padding:20px;border-bottom:1px solid var(--borde)}.grupo>*{min-width:0}
+h1,h2{margin:0;font-stretch:75%;font-weight:800;line-height:1}h1{font-size:2.1rem}h2{font-size:1.25rem}
+.nota{margin:0;color:var(--bruma);font-size:.9rem}
+.fila{display:flex;flex-wrap:wrap;gap:8px}
+button{font:600 .92rem var(--titulo);color:var(--hueso);background:none;border:1px solid var(--borde);padding:9px 14px;cursor:pointer}button:hover{border-color:var(--cian)}button:disabled{opacity:.5;cursor:default}button.lleno{background:var(--ambar);border-color:var(--ambar);color:#1a0f02}button.lleno:hover{background:var(--hueso);border-color:var(--hueso)}
+:focus-visible{outline:2px solid var(--ambar);outline-offset:2px}
+.campo{display:grid;gap:5px;font-size:.88rem;color:var(--bruma)}.campo.corto{flex:1}.campo input,.campo select{font:400 .95rem var(--titulo);color:var(--hueso);background:var(--abismo);border:1px solid var(--borde);padding:9px 10px;width:100%;min-width:0}.campo input[type=color]{padding:3px;height:40px}
+.check{display:flex;gap:9px;align-items:flex-start;font-size:.92rem}.check input{accent-color:var(--ambar);width:18px;height:18px;margin:2px 0 0;flex:none}
+.barra{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:.88rem;color:var(--bruma);margin-bottom:10px}.barra output{font:500 .76rem var(--mono);color:var(--hueso);font-variant-numeric:tabular-nums}.barra input{grid-column:1/-1;width:100%;accent-color:var(--ambar)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chips button{font-size:.84rem;padding:6px 11px}.chips button[aria-pressed=true]{background:var(--hueso);border-color:var(--hueso);color:#0a0d10}
+.descargas{display:grid;grid-template-columns:1fr 1fr;gap:8px}.descargas button{display:grid;gap:2px;text-align:left;padding:11px 13px}.descargas button:first-child{grid-column:1/-1}.descargas span{font-weight:400;font-size:.8rem;color:var(--bruma)}
+#guardados{grid-area:g;padding:26px 20px 40px;border-top:1px solid var(--borde);min-width:0}
+.cab{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px}.cab .fila{margin-left:auto}
+#lista{list-style:none;margin:18px 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+#lista li{display:grid;gap:6px;min-width:0;align-content:start}#lista .ver{padding:0;aspect-ratio:4/3;background:#000 center/cover;border-width:1px}#lista li.act .ver{border-color:var(--ambar)}
+#lista .nom{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#lista .pie{display:flex;justify-content:space-between;align-items:center;gap:8px;font:500 .7rem var(--mono);color:var(--bruma)}#lista .pie button{font:500 .7rem var(--mono);padding:5px 8px;color:var(--bruma)}#lista .pie button.seguro{color:var(--mal);border-color:var(--mal)}
+#lista .vacio{grid-column:1/-1;color:var(--bruma)}
+details{max-width:65ch;color:var(--bruma)}summary{cursor:pointer;color:var(--hueso)}
+@media(max-width:900px){main{grid-template-columns:minmax(0,1fr);grid-template-areas:"e" "p" "g"}#escena{height:58vh;height:58svh;min-height:320px;position:sticky;top:0;z-index:2;background:var(--abismo)}#panel{height:auto;position:static;border-left:0;border-top:1px solid var(--borde)}#etiqueta{left:14px;bottom:8px}}
+@media(max-width:900px) and (max-height:560px){#escena{position:relative;height:80svh;min-height:240px}}
+.objeto{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+#pincel{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;background:var(--abismo)}#pincel p{margin:0;max-width:60ch;text-align:center}#pincel canvas{min-height:0;max-width:100%;flex:0 1 auto;max-height:calc(100% - 120px);touch-action:none;cursor:crosshair}#pincel .fila{justify-content:center}#pincel [aria-pressed=true]{background:var(--hueso);color:#0a0d10}
