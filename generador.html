@@ -6,7 +6,7 @@
 <link rel="icon" href="icono.svg" type="image/svg+xml"><link rel="icon" href="icono-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="icono-180.png"><meta name="theme-color" content="#01040c">
 <meta name="description" content="Convierte imágenes y modelos 3D en arte ASCII animado. Todo ocurre en tu navegador: nada se sube a ningún sitio.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" href="generador.css?v=37"><link rel="preload" as="style" href="animaciones.css?v=5"><script defer src="animaciones.js?v=8"></script><script defer src="motor.js?v=36"></script><script defer src="modelos.js?v=36"></script><script defer src="objeto.js?v=36"></script><script defer src="generador.js?v=38"></script>
+<link rel="preload" as="style" href="generador.css?v=43"><link rel="preload" as="style" href="animaciones.css?v=5"><script defer src="animaciones.js?v=8"></script><script defer src="motor.js?v=41"></script><script defer src="modelos.js?v=41"></script><script defer src="objeto.js?v=41"></script><script defer src="generador.js?v=43"></script>
 <style>html{background:#01040c}#esq{position:fixed;inset:0;z-index:40;background:#01040c;color:#9db3bb;font:500 14px/1.4 Consolas,"DejaVu Sans Mono",monospace;overflow:hidden;transition:opacity .18s}#esq>*{animation:eq-ve .25s .85s both}.lista #esq{opacity:0;pointer-events:none}
 #esq i{display:block;background:linear-gradient(100deg,#0c1d26 35%,#1d3d49 50%,#0c1d26 65%) 0 0/300% 100%;animation:eq-luz 1.5s linear infinite}
 #esq pre{margin:0;font:700 clamp(7px,var(--eq,1.05vw),15px)/1.12 Consolas,"DejaVu Sans Mono",monospace;color:#0000;background:linear-gradient(100deg,#17323d 38%,#ffb14a 50%,#17323d 62%) 0 0/300% 100%;-webkit-background-clip:text;background-clip:text;animation:eq-luz 2.2s linear infinite}
@@ -40,7 +40,7 @@ o##%%%%%%####OOOOOOOOOooooooo**++=--:........
           ...::::-::::.............
              ...................
                     .....</pre></div><div class="eq-pan"><i style="width:58%;height:32px"></i><i style="width:96%;height:14px"></i><i style="width:70%;height:14px"></i><div><i style="width:126px;height:42px"></i><i style="width:112px;height:42px"></i></div><i style="width:100%;height:40px"></i><div><i style="width:58px;height:16px"></i><i style="width:92px;height:16px"></i><i style="width:64px;height:16px"></i><i style="width:84px;height:16px"></i></div><div class="eq-tar"><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i></div><div class="eq-tar"><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i><i style="width:30%;height:70px"></i></div></div><p>La conexión va lenta. Sigue cargando…</p><p>¿No avanza? <a href="">Volver a intentarlo</a></p></div>
-<link rel="stylesheet" href="generador.css?v=37"><link rel="stylesheet" href="animaciones.css?v=5">
+<link rel="stylesheet" href="generador.css?v=43"><link rel="stylesheet" href="animaciones.css?v=5">
 <header><a href="index.html" class="marca">Mundo en caracteres</a><nav aria-label="Secciones"><a href="index.html#indice">Galería</a><span aria-current="page">Generador</span></nav></header>
 <main>
  <section id="escena" aria-label="Dibujo">
@@ -105,14 +105,13 @@ o##%%%%%%####OOOOOOOOOooooooo**++=--:........
     <button type="button" id="ajusteBase">Restablecer estos ajustes</button>
    </div>
    <div role="tabpanel" id="p-baja" aria-labelledby="t-baja" hidden>
-    <h2>Qué incluye</h2><div class="dos cuatro" role="group" aria-label="Qué incluye la descarga"><button type="button" data-salida="1">Dibujo completo</button><button type="button" data-salida="3">Solo el objeto</button><button type="button" data-salida="2">Solo las letras</button><button type="button" data-salida="0">Con el fondo</button></div>
-    <p class="nota" id="nSalida"></p>
+    <p class="nota">Elige un formato. Verás cómo queda antes de guardarlo.</p>
     <div class="descargas">
-     <button type="button" data-baja="html"><b>Página animada</b><span>.html que se abre sin internet</span></button>
-     <button type="button" data-baja="png"><b>Imagen</b><span>.png del momento actual</span></button>
-     <button type="button" data-baja="video"><b>Video</b><span>6 segundos</span></button>
-     <button type="button" data-baja="txt"><b>Texto</b><span>.txt para copiar y pegar</span></button>
-     <button type="button" data-baja="proyecto"><b>Proyecto</b><span>.json para seguir editando</span></button>
+     <button type="button" data-baja="png"><b>Imagen</b><span>PNG, con o sin fondo</span></button>
+     <button type="button" data-baja="video"><b>Video</b><span>3, 6 o 10 segundos</span></button>
+     <button type="button" data-baja="txt"><b>Texto</b><span>copiar o descargar</span></button>
+     <button type="button" data-baja="html"><b>Página animada</b><span>se abre sin internet</span></button>
+     <button type="button" data-baja="proyecto"><b>Proyecto</b><span>para seguir editando aquí o en otro equipo</span></button>
     </div>
     <div id="ultimo" hidden><p><b>Último archivo</b><span id="uNombre"></span></p><div class="fila"><button type="button" id="uGuardar">Guardar otra vez</button><button type="button" id="uComp">Compartir</button></div></div>
     <p class="nota">El dibujo ya está guardado en este navegador. Descarga el proyecto si quieres conservarlo fuera.</p>
@@ -129,10 +128,16 @@ o##%%%%%%####OOOOOOOOOooooooo**++=--:........
  </section>
 </main>
 <dialog id="dDesc" aria-labelledby="dTit">
- <div id="dVista"></div>
- <h2 id="dTit"></h2>
- <p id="dBarra" role="progressbar" aria-valuemin="0" aria-valuemax="100"></p>
- <p id="dTxt" class="nota" role="status"></p>
- <div class="fila"><button type="button" class="lleno" id="dGuardar">Guardar archivo</button><button type="button" id="dComp">Compartir</button><button type="button" id="dCopia">Copiar texto</button><button type="button" id="dVolver"></button></div>
+ <div class="dIzq"><div id="dVista"></div><p id="dBarra" role="progressbar" aria-label="Progreso" aria-valuemin="0" aria-valuemax="100" hidden></p></div>
+ <div class="dDer">
+  <div class="dCab"><h2 id="dTit" tabindex="-1" autofocus></h2><button type="button" id="dCerrar" aria-label="Cerrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5 5 19"/></svg></button></div>
+  <p id="dExp" class="nota"></p>
+  <div data-op="salida"><h3>Qué incluye</h3><div class="dos cuatro" role="group" aria-label="Qué incluye"><button type="button" data-salida="1">Dibujo completo</button><button type="button" data-salida="3">Solo el objeto</button><button type="button" data-salida="2">Solo las letras</button><button type="button" data-salida="0">Con el fondo</button></div><p class="nota" id="nSalida"></p></div>
+  <div data-op="tam"><h3>Tamaño</h3><div class="dos seg" role="group" aria-label="Tamaño"><button type="button" data-tam="1">Normal</button><button type="button" data-tam="2">Grande</button></div></div>
+  <div data-op="dur"><h3>Duración</h3><div class="dos seg" role="group" aria-label="Duración"><button type="button" data-dur="3">3 s</button><button type="button" data-dur="6">6 s</button><button type="button" data-dur="10">10 s</button></div></div>
+  <label data-op="nombre" class="campo">Nombre del archivo<span class="ext"><input id="dNom" maxlength="50" autocomplete="off" spellcheck="false"><b id="dExt"></b></span></label>
+  <p id="dTxt" class="nota" role="status"></p>
+  <div class="dBot"><button type="button" id="dGrabar">Grabar</button><button type="button" id="dCopia">Copiar</button><button type="button" id="dGuardar">Descargar</button><button type="button" id="dComp">Compartir</button><button type="button" id="dVolver">Volver a descargas</button></div>
+ </div>
 </dialog>
 </body></html>

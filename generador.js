@@ -360,58 +360,90 @@ async function video(av, vivo) {
   const st = copia.captureStream(30), tr = []; let r;
   try {
     r = new MediaRecorder(st, { mimeType: tipo, videoBitsPerSecond: tactil ? 5e6 : 9e6 }); r.ondataavailable = e => e.data.size && tr.push(e.data);
-    await new Promise((ok, no) => { r.onstop = ok; r.onerror = () => no(Error('La grabación falló. Prueba con la página animada.')); r.start(250); const t0 = performance.now(), iv = setInterval(() => { const q = (performance.now() - t0) / 6000; av(Math.min(1, q)); if (q >= 1 || !vivo()) { clearInterval(iv); if (r.state !== 'inactive') r.stop(); } }, 120); });
+    await new Promise((ok, no) => { r.onstop = ok; r.onerror = () => no(Error('La grabación falló. Prueba con la página animada.')); r.start(250); const t0 = performance.now(), iv = setInterval(() => { const q = (performance.now() - t0) / (dur * 1000); av(Math.min(1, q)); if (q >= 1 || !vivo()) { clearInterval(iv); if (r.state !== 'inactive') r.stop(); } }, 120); });
   } finally { sigue = false; motor.solo = 0; motor.soloObjeto = false; st.getTracks().forEach(t => t.stop()); ponPausa(!!pausado); }
   if (!vivo()) return null; const b = new Blob(tr, { type: tipo.split(';')[0] }); if (b.size < 2000) throw Error('La grabación salió vacía. Prueba con la página animada.'); return b;
 }
 const FORMATOS = {
-  png: ['la imagen', '.png', async () => { let l = lienzo; if (sal()) { motor.soloObjeto = sal() === 3; motor.cuadro(performance.now()); l = motor.recorte(sal() === 2 ? 2 : 1); motor.soloObjeto = false; motor.cuadro(performance.now()); } const q = await new Promise(ok => l.toBlob(ok, 'image/png')); if (!q) throw Error('No se pudo crear la imagen.'); return q; }],
+  png: ['la imagen', '.png', async () => { let l = lienzo; if (sal()) { motor.soloObjeto = sal() === 3; motor.cuadro(performance.now()); l = motor.recorte(sal() === 2 ? 2 : 1, 1900 * tam); motor.soloObjeto = false; motor.cuadro(performance.now()); } const q = await new Promise(ok => l.toBlob(ok, 'image/png')); if (!q) throw Error('No se pudo crear la imagen.'); return q; }],
   txt: ['el texto', '.txt', async () => new Blob([motor.texto()], { type: 'text/plain' })],
   html: ['la página animada', '.html', async av => new Blob([await pagina(av)], { type: 'text/html' })],
   proyecto: ['el proyecto', '.json', async () => new Blob([JSON.stringify(proyecto({ ...D, ajustes: motor.S }))], { type: 'application/json' })],
   video: ['el video', '.mp4', video],
   copia: ['la copia de todos', '.json', async av => { const t = await tx('readonly', s => s.getAll()), partes = ['{"formato":"mundo-en-caracteres/copia","version":1,"dibujos":[']; for (let i = 0; i < t.length; i++) { partes.push((i ? ',' : '') + JSON.stringify(proyecto(t[i]))); await av((i + 1) / t.length); } partes.push(']}'); return new Blob(partes, { type: 'application/json' }); }]
 };
-// qué lleva la descarga: 1 solo el dibujo, 2 solo las letras, 0 con el fondo
-const N_SALIDA = { 3: 'Solo el objeto, sin el resto de la foto. La imagen lleva fondo transparente; el video y la página, negro.', 1: 'Recortado al dibujo. La imagen lleva fondo transparente; el video y la página, negro.', 2: 'Solo los caracteres, sin color detrás. La imagen lleva fondo transparente.', 0: 'Todo lo que ves, con el color de fondo y el resplandor.' };
+// qué lleva la descarga: 1 dibujo completo, 2 solo las letras, 3 solo el objeto, 0 con el fondo
+const N_SALIDA = { 3: 'Sin el resto de la foto', 1: 'Recortado al dibujo', 2: 'Solo los caracteres, sin color detrás', 0: 'Todo lo que ves, con el color de fondo y el resplandor.' };
 const hayObjeto = () => !!(D && D.tipo === 'imagen' && info && info.hay && !info.solo && D.ajustes.mueve === 'objeto'), sal = () => salida === 3 && !hayObjeto() ? 1 : salida;
-function pintaSalida() { $('[data-salida="3"]').disabled = !hayObjeto(); marca('[data-salida]', b => +b.dataset.salida === sal()); $('#nSalida').textContent = N_SALIDA[sal()]; }
-function ponSalida(v) { salida = v; pintaSalida(); try { localStorage.setItem('salida', v); } catch (e) {} }
-$$('[data-salida]').forEach(b => b.addEventListener('click', () => ponSalida(+b.dataset.salida))); { let v = 1; try { const g = localStorage.getItem('salida'); if (g !== null && N_SALIDA[g]) v = +g; } catch (e) {} ponSalida(v); }
-// ventana de progreso: prepara, entrega y vuelve a la lista de descargas
-const dd = $('#dDesc'); let turno = 0, cierra = 0, dirVista = '';
+function pintaSalida() { $('[data-salida="3"]').disabled = !hayObjeto(); marca('[data-salida]', b => +b.dataset.salida === sal()); marca('[data-tam]', b => +b.dataset.tam === tam); marca('[data-dur]', b => +b.dataset.dur === dur); $('#nSalida').textContent = N_SALIDA[sal()] + (!sal() ? '' : F === 'png' ? ', con fondo transparente.' : ', sobre fondo negro.'); }
+// ---- ventana de exportar: se ve el resultado, se ajusta y se elige qué hacer. Nada se descarga solo.
+const PANTALLA = {
+  png: { t: 'Imagen', e: 'Una foto fija del momento actual, en PNG.', op: ['salida', 'tam', 'nombre'], auto: true },
+  video: { t: 'Video', e: 'Graba la animación. Elige la duración y pulsa Grabar.', op: ['salida', 'dur', 'nombre'] },
+  html: { t: 'Página animada', e: 'Un solo archivo que se abre en cualquier navegador, sin internet, y se puede girar.', op: ['salida', 'nombre'], auto: true },
+  txt: { t: 'Texto', e: 'El dibujo en caracteres. Cópialo para pegarlo donde quieras o descárgalo.', op: ['nombre'], auto: true },
+  proyecto: { t: 'Proyecto', e: 'Guarda la imagen o el modelo con todos tus ajustes, para seguir editando aquí o en otro equipo.', op: ['nombre'], auto: true },
+  copia: { t: 'Copia de todos', e: 'Todos tus dibujos en un archivo. Se recupera con «Recuperar una copia».', op: ['nombre'], auto: true }
+};
+const dd = $('#dDesc'); let turno = 0, cierra = 0, dirVista = '', F = null, tam = 1, dur = 6, deLista = false, ocupado = false;
 const barraTxt = v => { const n = 18, k = Math.round(v * n), p = $('#dBarra'); p.textContent = '█'.repeat(k) + '░'.repeat(n - k) + ' ' + String(Math.round(v * 100)).padStart(3) + ' %'; p.setAttribute('aria-valuenow', Math.round(v * 100)); };
-const ve = o => { for (const id of ['dGuardar', 'dComp', 'dCopia']) $('#' + id).hidden = !o.includes(id); };
-let deLista = false;
-function aDescargas() { const abierta = dd.open; turno++; clearTimeout(cierra); if (abierta) dd.close(); if (abierta && !deLista) { pestana($("#t-baja")); const y = $(".descargas").getBoundingClientRect(); if (tactil && (y.top > innerHeight - 160 || y.bottom < innerHeight * .6)) scrollBy({ top: $(".tabs").getBoundingClientRect().bottom - $("#escena").getBoundingClientRect().bottom - $(".tabs").offsetHeight, behavior: quieto ? "auto" : "smooth" }); } const v = $('#dVista'); v.textContent = ''; if (dirVista) { URL.revokeObjectURL(dirVista); dirVista = ''; } }
-dd.addEventListener('cancel', e => { e.preventDefault(); aDescargas(); }); dd.addEventListener('pointerdown', () => clearTimeout(cierra)); $('#dVolver').addEventListener('click', aDescargas);
+const BOT = ['dGrabar', 'dCopia', 'dGuardar', 'dComp'], ve = o => BOT.forEach(id => { const b = $('#' + id); b.hidden = !o.includes(id); b.classList.toggle('lleno', o[0] === id); });
+const ext = () => F === 'video' && ultimo && ultimo.k === 'video' && ultimo.blob.type.includes('webm') ? '.webm' : FORMATOS[F][1];
+const limpiaNombre = t => t.normalize('NFD').replace(/[^\x20-\x7e]/g, '').replace(/[^A-Za-z0-9 _-]+/g, '').trim().replace(/\s+/g, '-').slice(0, 50);
+const nombreFinal = () => (limpiaNombre($('#dNom').value) || (F === 'copia' ? 'mis-dibujos-ascii' : archivo(''))) + ext();
+function aDescargas() {
+  const abierta = dd.open; turno++; clearTimeout(cierra); if (abierta) dd.close(); ocupado = false;
+  if (abierta && !deLista) { pestana($('#t-baja')); const y = $('.descargas').getBoundingClientRect(); if (tactil && (y.top > innerHeight - 160 || y.bottom < innerHeight * .6)) scrollBy({ top: $('.tabs').getBoundingClientRect().bottom - $('#escena').getBoundingClientRect().bottom - $('.tabs').offsetHeight, behavior: quieto ? 'auto' : 'smooth' }); }
+  $('#dVista').textContent = ''; if (dirVista) { URL.revokeObjectURL(dirVista); dirVista = ''; }
+}
 function pintaUltimo() { $('#ultimo').hidden = !ultimo; if (!ultimo) return; $('#uNombre').textContent = ultimo.nombre + ' · ' + peso(ultimo.blob.size); $('#uComp').hidden = !comoArchivo(ultimo); }
-function entregado(t) {
-  $('#dTit').textContent = 'Listo'; $('#dBarra').hidden = true; $('#dTxt').textContent = t; $('#dGuardar').textContent = 'Guardar otra vez'; $('#dGuardar').classList.remove('lleno'); $('#dVolver').textContent = 'Volver a descargas'; dd.classList.add('hecho');
-  clearTimeout(cierra); if (!dentroDeApp) cierra = setTimeout(aDescargas, 4200);
-}
-async function comparte() { const q = ultimo && comoArchivo(ultimo); if (!q) return; clearTimeout(cierra); try { await navigator.share({ files: [q], title: ultimo.nombre }); entregado('Archivo entregado.'); } catch (e) { if (e.name !== 'AbortError') { baja(ultimo.blob, ultimo.nombre); entregado(avisoGuardado()); } } }
 const avisoGuardado = () => dentroDeApp ? 'Si no se guardó, es porque el navegador de esta aplicación no deja descargar. Abre esta página en Chrome o Safari.' : tactil ? 'Enviado a las descargas del teléfono. Si tu navegador pregunta, acepta guardar.' : 'Enviado a tu carpeta de descargas.';
+const dice = (t, clase) => { const p = $('#dTxt'); p.textContent = t; p.className = 'nota ' + (clase || ''); };
+function entregado(t) { dice(t, 'hecho'); clearTimeout(cierra); if (!dentroDeApp) cierra = setTimeout(aDescargas, 4200); }
+async function comparte() { const q = ultimo && comoArchivo(ultimo); if (!q) return; clearTimeout(cierra); try { await navigator.share({ files: [q], title: ultimo.nombre }); if (dd.open) entregado('Archivo entregado.'); } catch (e) { if (e.name !== 'AbortError') { baja(ultimo.blob, ultimo.nombre); if (dd.open) entregado(avisoGuardado()); } } }
 // en iPhone lo fiable es la hoja del sistema («Guardar en Archivos»); en el resto, la descarga normal
-const entrega = () => { if (!ultimo) return; if (ios && comoArchivo(ultimo)) return comparte(); baja(ultimo.blob, ultimo.nombre); entregado(avisoGuardado()); };
-$('#dGuardar').addEventListener('click', entrega); $('#dComp').addEventListener('click', comparte); $('#uGuardar').addEventListener('click', () => { abreVentana('Archivo listo'); entrega(); }); $('#uComp').addEventListener('click', comparte);
-$('#dCopia').addEventListener('click', async () => { try { await navigator.clipboard.writeText(await ultimo.blob.text()); entregado('Texto copiado.'); } catch (e) { $('#dTxt').textContent = 'No se pudo copiar.'; } });
-function abreVentana(t) { dd.classList.remove('hecho', 'mal'); $('#dTit').textContent = t; $('#dTxt').textContent = ''; $('#dBarra').hidden = false; $('#dGuardar').textContent = 'Guardar archivo'; $('#dGuardar').classList.add('lleno'); $('#dVolver').textContent = 'Cancelar'; ve([]); barraTxt(0); if (!dd.open) dd.showModal(); }
-async function descarga(k) {
-  deLista = k === "copia"; const [que, ext, hace] = FORMATOS[k], yo = ++turno, vivo = () => yo === turno && dd.open; clearTimeout(cierra); $('#dVista').textContent = ''; $('#dVista').classList.remove('cuadros'); motor.cuadro(performance.now()); abreVentana((k === 'video' ? 'Grabando ' : 'Preparando ') + que); $('#dTxt').textContent = k === 'video' ? 'Tarda 6 segundos. No cambies de aplicación.' : 'Un momento…';
-  const im = new Image(); im.alt = ''; im.src = mini(); $('#dVista').append(im); const quita = A.letras($('#dVista')), t0 = performance.now(); A.descifra($('#dTit'), 600);
-  const av = async v => { if (vivo()) barraTxt(Math.min(.97, v)); await respira_(); };
-  try {
-    await respira_(); const blob = await hace(av, vivo); if (!vivo() || !blob) return; while (performance.now() - t0 < 700) { if (!vivo()) return; barraTxt(Math.min(.99, Math.max(.3, (performance.now() - t0) / 700))); await respira_(); } if (!vivo()) return; barraTxt(1);
-    ultimo = { blob, nombre: k === 'copia' ? 'mis-dibujos-ascii.json' : archivo(k === 'video' && blob.type.includes('webm') ? '.webm' : ext) }; pintaUltimo();
-    // vista previa del archivo real: si el navegador no deja descargar, la imagen se guarda manteniéndola pulsada
-    if (k === 'png' || k === 'video') { if (dirVista) URL.revokeObjectURL(dirVista); dirVista = URL.createObjectURL(blob); const m = document.createElement(k === 'png' ? 'img' : 'video'); if (k === 'video') Object.assign(m, { muted: true, loop: true, autoplay: true, playsInline: true, controls: true }); else m.alt = 'Vista previa'; m.src = dirVista; $('#dVista').classList.toggle('cuadros', k === 'png' && sal() > 0); $('#dVista').replaceChildren(m); }
-    ve(['dGuardar'].concat(comoArchivo(ultimo) ? ['dComp'] : [], k === 'txt' ? ['dCopia'] : []));
-    if (tactil) { $('#dTit').textContent = 'Archivo listo'; $('#dTxt').textContent = ultimo.nombre + ' · ' + peso(blob.size) + (k === 'png' ? '. También puedes mantener pulsada la imagen para guardarla.' : '.') + (dentroDeApp ? ' Estás en el navegador de otra aplicación: si no se guarda, abre esta página en Chrome o Safari.' : ''); $('#dVolver').textContent = 'Volver a descargas'; $('#dGuardar').focus(); }
-    else { baja(blob, ultimo.nombre); entregado(ultimo.nombre + ' · ' + peso(blob.size) + '. ' + avisoGuardado()); }
-  } catch (x) { if (!vivo()) return; dd.classList.add('mal'); $('#dTit').textContent = 'No se pudo descargar'; $('#dBarra').hidden = true; $('#dTxt').textContent = x.message || 'Algo falló.'; ve([]); $('#dVolver').textContent = 'Volver a descargas'; } finally { quita(); }
+const entrega = () => { if (!ultimo) return; if (ios && comoArchivo(ultimo)) return comparte(); baja(ultimo.blob, ultimo.nombre); if (dd.open) entregado(avisoGuardado()); else avisa(avisoGuardado()); };
+const puedeCopiarImagen = () => !!(navigator.clipboard && navigator.clipboard.write && window.ClipboardItem);
+async function copia() {
+  clearTimeout(cierra);
+  try { if (F === 'png') { await navigator.clipboard.write([new ClipboardItem({ 'image/png': ultimo.blob })]); entregado('Imagen copiada. Ya puedes pegarla donde quieras.'); } else { await navigator.clipboard.writeText(await ultimo.blob.text()); entregado('Texto copiado. Ya puedes pegarlo donde quieras.'); } }
+  catch (e) { const p = $('#dVista pre'); if (p) { const r = document.createRange(), s = getSelection(); r.selectNodeContents(p); s.removeAllRanges(); s.addRange(r); dice('Tu navegador no deja copiarlo solo. Lo he seleccionado: cópialo a mano o descárgalo.', 'mal'); } else dice('Tu navegador no deja copiar la imagen. Descárgala.', 'mal'); }
 }
-$$('[data-baja]').forEach(b => b.addEventListener('click', () => descarga(b.dataset.baja))); $('#copia').addEventListener('click', () => descarga('copia'));
+// opciones que se ven según el formato; mientras graba no se pueden cambiar
+function pintaOpciones() { const op = PANTALLA[F].op; $$('[data-op]').forEach(e => e.hidden = !op.includes(e.dataset.op) || e.dataset.op === 'tam' && !sal()); $$('[data-op] button,[data-op] input').forEach(b => b.disabled = ocupado && F === 'video'); $('#dExt').textContent = ext(); pintaSalida(); if (ocupado && F === 'video') $('[data-salida="3"]').disabled = true; }
+function abre(k) {
+  if (!D && k !== 'copia') return; F = k; deLista = k === 'copia'; turno++; clearTimeout(cierra); ocupado = false; dd.className = ''; $('#dTit').textContent = PANTALLA[k].t; $('#dExp').textContent = PANTALLA[k].e; dice(''); $('#dBarra').hidden = true; $('#dVista').className = '';
+  $('#dNom').value = k === 'copia' ? 'mis-dibujos-ascii' : archivo(''); $('#dCopia').textContent = k === 'png' ? 'Copiar imagen' : 'Copiar texto';
+  motor.cuadro(performance.now()); const im = new Image(); im.alt = ''; im.src = mini(); $('#dVista').replaceChildren(im); ve([]); pintaOpciones(); if (!dd.open) dd.showModal(); A.descifra($('#dTit'), 420);
+  if (PANTALLA[k].auto) prepara(); else { ve(['dGrabar']); $('#dGrabar').textContent = 'Grabar ' + dur + ' segundos'; $('#dGrabar').focus(); }
+}
+async function prepara() {
+  const k = F, yo = ++turno, vivo = () => yo === turno && dd.open, t0 = performance.now(); clearTimeout(cierra); ocupado = true; ve([]); dice(k === 'video' ? 'Grabando. No cambies de aplicación.' : 'Preparando…'); $('#dBarra').hidden = false; barraTxt(0); pintaOpciones(); dd.classList.add('prepara');
+  const av = async v => { if (vivo()) barraTxt(Math.min(.97, v)); await respira_(); }, quita = k === 'copia' || k === 'proyecto' || k === 'html' ? A.letras($('#dVista')) : () => {};
+  try {
+    await respira_(); const blob = await FORMATOS[k][2](av, vivo); if (!vivo() || !blob) return; while (performance.now() - t0 < 380) { barraTxt(Math.min(.99, (performance.now() - t0) / 380)); await respira_(); if (!vivo()) return; } barraTxt(1);
+    ocupado = false; ultimo = { blob, k, nombre: '' }; ultimo.nombre = nombreFinal(); pintaUltimo(); $('#dBarra').hidden = true; pintaOpciones();
+    let det = peso(blob.size);
+    if (k === 'png' || k === 'video') {
+      if (dirVista) URL.revokeObjectURL(dirVista); dirVista = URL.createObjectURL(blob); const m = document.createElement(k === 'png' ? 'img' : 'video'); if (k === 'video') Object.assign(m, { muted: true, loop: true, autoplay: true, playsInline: true, controls: true }); else m.alt = 'Vista previa'; m.src = dirVista; $('#dVista').replaceChildren(m); $('#dVista').classList.toggle('cuadros', k === 'png' && sal() > 0);
+      if (k === 'png') { try { await m.decode(); } catch (e) {} if (!vivo()) return; det = m.naturalWidth + ' × ' + m.naturalHeight + ' · ' + det; } else det = dur + ' segundos · ' + det;
+    } else if (k === 'txt') { const t = await blob.text(); if (!vivo()) return; const pre = document.createElement('pre'), f = t.split('\n'); pre.textContent = t; pre.tabIndex = 0; pre.setAttribute('aria-label', 'Texto del dibujo'); pre.style.setProperty('--col', Math.max(1, ...f.map(q => q.length))); $('#dVista').replaceChildren(pre); det = f.length + ' líneas · ' + det; }
+    const comp = comoArchivo(ultimo) ? ['dComp'] : []; $('#dGuardar').textContent = 'Descargar ' + ext(); $('#dGrabar').textContent = 'Grabar otra vez';
+    ve(k === 'txt' ? ['dCopia', 'dGuardar', ...comp] : k === 'png' ? ['dGuardar', ...(puedeCopiarImagen() ? ['dCopia'] : []), ...comp] : k === 'video' ? ['dGuardar', 'dGrabar', ...comp] : ['dGuardar', ...comp]);
+    dice(det + (k === 'png' && tactil ? '. También puedes guardarla manteniéndola pulsada.' : '') + (dentroDeApp ? ' Estás en el navegador de otra aplicación: si no se guarda, abre esta página en Chrome o Safari.' : ''));
+    if ([dd, document.body, $('#dTit'), $('#dCerrar')].includes(document.activeElement)) $(k === 'txt' ? '#dCopia' : '#dGuardar').focus();
+  } catch (x) { if (!vivo()) return; ocupado = false; pintaOpciones(); $('#dBarra').hidden = true; dice(x.message || 'Algo falló.', 'mal'); $('#dGrabar').textContent = 'Intentarlo otra vez'; ve(['dGrabar']); }
+  finally { quita(); if (yo === turno) dd.classList.remove('prepara'); }
+}
+// al cambiar una opción se rehace la vista previa; el video hay que grabarlo de nuevo
+function cambiaOpcion() { clearTimeout(cierra); pintaOpciones(); if (F === 'video') { turno++; if (ultimo && ultimo.k === 'video') { const im = new Image(); im.alt = ''; im.src = mini(); $('#dVista').replaceChildren(im); } dice(''); ve(['dGrabar']); $('#dGrabar').textContent = 'Grabar ' + dur + ' segundos'; } else prepara(); }
+$$('[data-salida]').forEach(b => b.addEventListener('click', () => { salida = +b.dataset.salida; try { localStorage.setItem('salida', salida); } catch (e) {} cambiaOpcion(); }));
+$$('[data-tam]').forEach(b => b.addEventListener('click', () => { tam = +b.dataset.tam; cambiaOpcion(); })); $$('[data-dur]').forEach(b => b.addEventListener('click', () => { dur = +b.dataset.dur; cambiaOpcion(); }));
+try { const g = localStorage.getItem('salida'); if (g !== null && N_SALIDA[g]) salida = +g; } catch (e) {}
+$('#dNom').addEventListener('input', () => { clearTimeout(cierra); if (ultimo && ultimo.k === F) { ultimo.nombre = nombreFinal(); pintaUltimo(); } });
+dd.addEventListener('cancel', e => { e.preventDefault(); aDescargas(); }); dd.addEventListener('pointerdown', e => { clearTimeout(cierra); if (e.target === dd) { const r = dd.getBoundingClientRect(); if (!ocupado && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) aDescargas(); } });
+$('#dVolver').addEventListener('click', aDescargas); $('#dCerrar').addEventListener('click', aDescargas); $('#dGrabar').addEventListener('click', prepara); $('#dGuardar').addEventListener('click', entrega); $('#dComp').addEventListener('click', comparte); $('#dCopia').addEventListener('click', copia); $('#uGuardar').addEventListener('click', entrega); $('#uComp').addEventListener('click', comparte);
+$$('[data-baja]').forEach(b => b.addEventListener('click', () => abre(b.dataset.baja))); $('#copia').addEventListener('click', () => abre('copia')); pintaSalida();
 // importa un proyecto o una copia; se revisa todo antes de aceptarlo
 async function importa(f) {
   if (f.size > 400e6) throw Error('La copia es demasiado grande.'); let j; try { j = JSON.parse(await f.text()); } catch (e) { throw Error('Ese archivo no es un proyecto del generador.'); }

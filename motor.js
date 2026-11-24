@@ -125,8 +125,8 @@ class MotorAscii {
     let a = w, b = h, c = -1, e = -1; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 100) { a = Math.min(a, x); c = Math.max(c, x); b = Math.min(b, y); e = Math.max(e, y); } return c < 0 ? [0, 0, w, h] : [a, b, c + 1, e + 1];
   }
   // el dibujo recortado en un lienzo transparente, con letras nítidas aunque la pantalla sea pequeña
-  recorte(solo) {
-    const gl = this.gl, [a, b, c, e] = this.caja(), mx = Math.min(4096, gl.getParameter(gl.MAX_TEXTURE_SIZE)), cw = Math.max(6, Math.floor(Math.min(Math.max(this.cw, 1900 / this.cols), mx / this.cols, mx / this.filas / 1.75))), ch = Math.round(cw * this.ch / this.cw), W = cw * this.cols, H = ch * this.filas;
+  recorte(solo, ancho = 1900) {
+    const gl = this.gl, [a, b, c, e] = this.caja(), mx = Math.min(4096, gl.getParameter(gl.MAX_TEXTURE_SIZE)), cw = Math.max(6, Math.floor(Math.min(Math.max(this.cw, ancho / this.cols), mx / this.cols, mx / this.filas / 1.75))), ch = Math.round(cw * this.ch / this.cw), W = cw * this.cols, H = ch * this.filas;
     const t = gl.createTexture(), fb = gl.createFramebuffer(); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
     const u = this.pFin.u; gl.viewport(0, 0, W, H); gl.useProgram(this.pFin.p); gl.bindTexture(gl.TEXTURE_2D, this.capas[1].tex); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.letras); gl.activeTexture(gl.TEXTURE0); gl.uniform1f(u.solo, solo); gl.uniform2f(u.celda, cw, ch); gl.drawArrays(gl.TRIANGLES, 0, 3);
     const w = (c - a) * cw, h = (e - b) * ch, d = new Uint8Array(w * h * 4); gl.readPixels(a * cw, b * ch, w, h, gl.RGBA, gl.UNSIGNED_BYTE, d); gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.deleteFramebuffer(fb); gl.deleteTexture(t);
