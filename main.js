@@ -2,7 +2,25 @@
 const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const cv = $('#mar'), gl = cv.getContext('webgl2', { antialias: false, alpha: false });
 const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const C = Object.fromEntries(CRIATURAS.map(c => [c.id, c]));
+// Monta la galería a partir del catálogo
+const C = {};
+const obras = OBRAS.filter(o => {
+  const cod = CRIATURAS.find(c => c.id === o.id);
+  if (!cod && !o.imagen) { console.warn('Falta el dibujo de', o.id); return false; }
+  C[o.id] = Object.assign(cod || {}, o); return true;
+});
+const slug = { reales: 'animales-reales', fauna: 'fauna-fantastica', monstruos: 'monstruos', mitos: 'mitologia' }, vistos = new Set();
+const ancla1 = id => { if (!id || vistos.has(id)) return ''; vistos.add(id); return `<span id="${id}"></span>`; };
+const grupos = GRUPOS.filter(g => obras.some(o => o.grupo === g.id));
+$('#familias').innerHTML = '<a href="#inicio">Inicio</a>' + grupos.map(g => `<a href="#${g.id}" data-f="${g.id}">${g.nombre}</a>`).join('');
+$('#indice .caja').innerHTML = grupos.map(g => {
+  const l = obras.filter(o => o.grupo === g.id);
+  return `<details name="indice"><summary>${g.nombre}<span>${l.length}</span></summary><ul>${l.map(o => `<li><a href="#${o.id}">${o.titulo}</a></li>`).join('')}</ul></details>`;
+}).join('');
+$('main').insertAdjacentHTML('beforeend', grupos.flatMap(g => obras.filter(o => o.grupo === g.id)).map(o =>
+  `<section id="${o.id}" data-c="${o.id}" data-f="${o.grupo}">${ancla1(o.grupo)}${ancla1(slug[o.fondo])}<div class="caja"><h2>${o.titulo}</h2><p class="lat">${o.dato || ''}</p><p>${o.texto || ''}</p></div></section>`).join(''));
+$('main > section:last-child .caja').append($('#creditos').content);
+$$('#inicio,#indice').forEach(s => s.dataset.c = obras[0].id);
 
 const VERT = `#version 300 es
 void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.-1.,0,1);}`;
@@ -28,12 +46,12 @@ float gajo(vec3 p,float n){return round(atan(p.z,p.x)/6.28318*n);}
 vec3 ronda(vec3 p,float n){float a=-gajo(p,n)/n*6.28318,c=cos(a),s=sin(a);return vec3(c*p.x-s*p.z,p.y,s*p.x+c*p.z);}
 float parpado(){float m=mod(tiempo,3.6);return smoothstep(.14,.04,abs(m-.2));}
 vec4 ojo(vec3 q,float r,vec3 iris,vec3 mira,vec3 parp){
- r*=.64;float d=length(q)-r;if(d>.25)return vec4(parp,d);
- mira=normalize(mira+vec3(.08*sin(tiempo*.9),.04*sin(tiempo*.7),0)+vec3(clamp((lampara-centro)*.5,-.4,.4),0));
+ r*=.56;float d=length(q)-r;if(d>.25)return vec4(parp,d);
+ mira=normalize(mira+vec3(clamp((lampara-centro)*.35,-.28,.28),0));
  vec3 n=normalize(q+1e-5);float a=dot(n,mira);
- vec3 c=vec3(.8,.76,.7);c=mix(c,iris*1.3,smoothstep(.36,.42,a));c=mix(c,iris*.45,smoothstep(.5,.4,a)*smoothstep(.34,.42,a));c=mix(c,vec3(.01),smoothstep(.78,.82,a));
- c=mix(c,vec3(1.6),smoothstep(.955,.97,dot(n,normalize(mira+vec3(-.25,.32,.05)))));
- c=mix(c,parp*.7,step(.62-1.8*parpado(),n.y));
+ vec3 c=parp*.45;c=mix(c,iris*(.85+.25*sin(atan(n.y,n.x)*18.)),smoothstep(.2,.3,a));c*=1.-.55*smoothstep(.45,.25,a);c=mix(c,vec3(.005),smoothstep(.76,.82,a));
+ c=mix(c,vec3(1.25),smoothstep(.972,.985,dot(n,normalize(mira+vec3(-.2,.28,.05)))));
+ c=mix(c,parp*.75,step(.55-1.7*parpado(),n.y));
  return vec4(c,d);}
 #line 1
 `;
@@ -41,27 +59,45 @@ vec4 ojo(vec3 q,float r,vec3 iris,vec3 mira,vec3 parp){
 // Pasada 1: raymarching, un píxel por carácter
 const POST = `
 vec4 viva(vec3 p){
- float b=.014*sin(tiempo*2.2)+.1*brinco,y=p.y+1.1;
- p.y=(y-.16*max(brinco,0.))/(1.+b)-1.1;p.xz*=1.+.55*b;p.x+=.02*sin(tiempo*1.3)*y-.05*clamp(lampara.x-centro.x,-1.,1.)*y;
+ float b=.005*sin(tiempo*1.8)+.05*brinco,y=p.y+1.1;
+ p.y=(y-.16*max(brinco,0.))/(1.+b)-1.1;p.xz*=1.+.55*b;p.x+=.01*sin(tiempo*1.1)*y-.025*clamp(lampara.x-centro.x,-1.,1.)*y;
  return criatura(p,tiempo);}
-vec3 normal(vec3 p){vec3 n=vec3(0);for(int i=min(int(tiempo),0);i<4;i++){vec3 e=.5773*(2.*vec3((((i+3)>>1)&1),((i>>1)&1),(i&1))-1.);n+=e*viva(p+.005*e).w;}return normalize(n+1e-6);}
+float gr(vec3 p){return sin(p.x)*sin(p.y+1.3*sin(p.z*.7))*sin(p.z+.9*sin(p.x*.6));}
 void main(){
  vec2 s=(gl_FragCoord.xy/res*2.-1.)*vec2(aspecto,1.);
  vec2 uv=(s-centro)/esc;
- vec3 ro=vec3(0,0,5),rd=normalize(vec3(uv,-1.5)),L=vec3((lampara-centro)/esc*2.5,1.25);
- vec3 col=vec3(0);float t=2.5;vec4 h;bool hit=false;
- for(int i=0;i<90;i++){vec3 p=ro+rd*t;h=viva(p);if(h.w<.004){hit=true;break;}t+=min(h.w*.8,.3);if(t>8.)break;}
+ vec3 ro=vec3(0,0,5),rd=normalize(vec3(uv,-1.5)),L=vec3((lampara-centro)/esc*2.5,1.35);
+ vec3 col=vec3(0),P=vec3(0),n=vec3(0),l=vec3(0),e=vec3(0);vec4 h=vec4(0);
+ float t=2.5,ts=.06,oc=0.,so=1.,dL=1.;int fase=0,k=0;bool hit=false;
+ for(int i=min(int(tiempo),0);i<125;i++){
+  vec3 q;
+  if(fase==0)q=ro+rd*t;
+  else if(fase==1){e=.5773*(2.*vec3((((k+3)>>1)&1),((k>>1)&1),(k&1))-1.);q=P+.005*e;}
+  else if(fase==2)q=P+n*(.05+.11*float(k));
+  else q=P+n*.035+l*ts;
+  vec4 m=viva(q);
+  if(fase==0){
+   if(m.w<.004){hit=true;h=m;P=q;fase=1;}
+   else{t+=min(m.w*.8,.3);if(t>8.||i>92)break;}
+  }else if(fase==1){n+=e*m.w;if(++k==4){n=normalize(n+1e-6);l=L-P;dL=length(l);l/=dL;fase=2;k=0;}}
+  else if(fase==2){float z=.05+.11*float(k);oc+=max(z-m.w*1.5,0.)*(1.-.28*float(k));if(++k==3){if(dot(n,l)<=0.)break;fase=3;k=0;}}
+  else{so=min(so,11.*m.w/ts);ts+=clamp(m.w*1.2,.05,.22);if(++k==10||ts>dL-.15||so<.02)break;}
+ }
  if(hit){
-  vec3 p=ro+rd*t,n=normal(p),l=L-p;float d2=dot(l,l);l/=sqrt(d2);
-  float dif=max(dot(n,l),0.),spec=pow(max(dot(reflect(-l,n),-rd),0.),24.),rim=pow(1.-max(dot(n,-rd),0.),2.5);
-  vec3 b=min(h.xyz,vec3(1.1)),em=max(h.xyz-1.1,0.);
-  b=max(mix(vec3(dot(b,vec3(.3,.59,.11))),b,1.16),0.);
-  float nv=max(dot(n,-rd),0.),plano=mix(dif,.5*smoothstep(.02,.16,dif)+.5*smoothstep(.42,.6,dif),.55);
-  float frente=mix(nv,.45+.55*smoothstep(.25,.4,nv),.5);
-  col=b*(.1+.22*frente+.1*smoothstep(.1,.3,n.y)+plano*vec3(1.,.9,.74)*2.1/(1.+d2*.7));
-  col+=smoothstep(.5,.6,spec)*.45/(1.+d2)*vec3(1.,.95,.85);
-  col+=smoothstep(.5,.8,rim)*(b*.4+vec3(.06,.26,.34));
-  if(max(em.x,max(em.y,em.z))>0.)col+=b*.45+em*1.2;
+  // grano de piel: rompe la lisura en color y relieve
+  float g1=gr(P*31.),g2=gr(P*67.+3.);
+  n=normalize(n+.09*vec3(gr(P*43.),gr(P*47.+2.),gr(P*41.+5.)));
+  float ao=clamp(1.-2.1*oc,.18,1.),dif=max(dot(n,l),0.),nv=max(dot(n,-rd),0.),d2=dL*dL;
+  float spec=pow(max(dot(n,normalize(l-rd)),0.),38.),rim=pow(1.-nv,3.);
+  vec3 b=min(h.xyz,vec3(1.)),em=max(h.xyz-1.1,0.);
+  b=mix(vec3(dot(b,vec3(.3,.59,.11))),b,.96)*(.9+.12*g1+.07*g2);
+  vec3 cielo=mix(vec3(.13,.14,.17),vec3(.36,.38,.42),n.y*.5+.5);
+  col=b*(cielo+.42*nv)*ao;
+  col+=b*dif*mix(.12,1.,so)*vec3(1.,.88,.7)*3.1/(1.+d2*.55);
+  col+=b*max(dot(n,normalize(vec3(-.7,.25,-.45))),0.)*vec3(.34,.46,.58)*ao;
+  col+=spec*so*.4/(1.+d2*.7)*vec3(1.,.92,.8);
+  col+=rim*vec3(.12,.2,.26)*ao;
+  if(max(em.x,max(em.y,em.z))>0.)col+=min(h.xyz,vec3(1.))*.4+em*1.1;
  }
  sal=vec4(col,hit?1.:0.);
 }`;
@@ -134,6 +170,28 @@ function termina({ pr, sh }) {
   for (let i = 0; i < total; i++) { const nm = gl.getActiveUniform(pr, i).name; us[nm] = gl.getUniformLocation(pr, nm); }
   return { pr, us };
 }
+// Obra a partir de una imagen: la foto se ajusta al escenario y la linterna la ilumina
+const IMG = `#version 300 es
+precision highp float;uniform sampler2D foto;uniform vec2 res,centro,lampara;uniform float tiempo,esc,aspecto,brinco,prop;out vec4 sal;
+void main(){
+ vec2 s=(gl_FragCoord.xy/res*2.-1.)*vec2(aspecto,1.),d=(s-centro)/(esc*.42);
+ d.y-=.1*max(brinco,0.);d+=.012*vec2(sin(tiempo*.7+d.y*3.),cos(tiempo*.6+d.x*3.));
+ vec2 m=prop>1.?vec2(1.,1./prop):vec2(prop,1.),u=d/m*.5+.5;
+ if(any(lessThan(u,vec2(0)))||any(greaterThan(u,vec2(1)))){sal=vec4(0);return;}
+ vec4 c=texture(foto,vec2(u.x,1.-u.y));
+ vec2 b=smoothstep(vec2(0),vec2(.06),u)*smoothstep(vec2(0),vec2(.06),1.-u);
+ float l=length(s-lampara);vec3 k=pow(c.rgb,vec3(1.15))*c.a*b.x*b.y*(.62+1.1*exp(-l*l*2.2));
+ sal=vec4(k,step(.04,max(k.r,max(k.g,k.b))));
+}`;
+function empieza(c) {
+  if (c.imagen && !c.tex) {
+    c.tex = gl.createTexture(); const im = new Image();
+    im.onload = () => { gl.bindTexture(gl.TEXTURE_2D, c.tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im); filtro(); c.prop = im.width / im.height; pide(); };
+    im.onerror = () => console.error('No se pudo cargar', c.imagen);
+    im.src = c.imagen;
+  }
+  c.pend = inicia(c.imagen ? IMG : PRE + c.codigo + POST);
+}
 const compila = frag => termina(inicia(frag));
 const arma = codigo => compila(PRE + codigo + POST);
 
@@ -190,21 +248,28 @@ function estado() {
   secs.forEach((s, i) => { if (s.getBoundingClientRect().top <= m) idx = i; });
   return { act: secs[idx], idx };
 }
-const FONDO = { reales: [.006, .045, .085], fauna: [.04, .022, .09], monstruos: [.06, .016, .02], mitos: [.065, .04, .012] };
-const fondo = [...FONDO.monstruos];
+const fondo = [...FONDOS.criaturas];
 const nav = $$('#familias a'); let famAnt = null;
 // Devuelve el programa, o null mientras la GPU lo compila
 function toma(c) {
   if (c.prog) return c.prog;
-  if (!c.pend) c.pend = inicia(PRE + c.codigo + POST);
-  if (!listo(c.pend)) return null;
+  if (!c.pend) empieza(c);
+  if (c.imagen && !c.prop || !listo(c.pend)) return null;
   const p = c.pend; c.pend = null;
   try { return c.prog = termina(p); } catch (e) { console.error(c.id, e.message); return c.prog = vacio; }
 }
 // Metamorfosis: va por tiempo, así se ve igual al desplazarse que al saltar con un enlace
 const DURA = 1.25;
+// Salto: solo si se presiona la criatura, y como mucho uno cada ESPERA segundos
+const ESPERA = 3;
 let golpe = -9;
-addEventListener('click', e => { if (!e.target.closest('a,summary,details')) golpe = performance.now() / 1000; pide(); });
+addEventListener('click', e => {
+  const ahora = performance.now() / 1000;
+  if (ahora - golpe < ESPERA || e.target.closest('a,summary,details')) return;
+  const x = (e.clientX / W * 2 - 1) * W / H, y = 1 - e.clientY / H * 2;
+  if (Math.hypot(x - esc.x, y - esc.y) > esc.r * 1.15) return;
+  golpe = ahora; pide();
+});
 let de = null, hacia = null, avance = 0, sentido = 1, inv = 0, antes = 0;
 function metamorfosis(meta, ms) {
   const dt = Math.min(.05, (ms - antes) / 1000); antes = ms;
@@ -217,7 +282,7 @@ function metamorfosis(meta, ms) {
   if (hacia) {
     // si ya hay otra esperando, acelera
     avance += dt / DURA * (meta === hacia ? 1 : 2.2);
-    if (avance >= 1) { de = hacia; hacia = null; avance = 0; golpe = ms / 1000; }
+    if (avance >= 1) { de = hacia; hacia = null; avance = 0; }
   }
 }
 const orden = secs.filter(s => s.dataset.f).map(s => C[s.dataset.c]);
@@ -243,9 +308,9 @@ addEventListener('hashchange', () => setTimeout(() => {
 // Centro y tamaño de la criatura, en unidades donde la pantalla mide 2 de alto
 const esc = { x: 0, y: 0, r: .5, ok: false };
 // envergadura de las más anchas, para que no pisen el texto
-const ANCHO = { fenix: 1.36, hidra: 1.22, dragon: 1.45, tubos: 1.12, caracol: 1.35, ballena: 1.3, aspido: 1.3, arpa: 1.2, kraken: 1.32 };
+const ANCHO = { fenix: 1.36, hidra: 1.22, dragon: 1.45, tubos: 1.12, caracol: 1.35, ballena: 1.3, aspido: 1.3, arpa: 1.2, kraken: 1.32, saturno: 1.35, agujero: 1.3, montes: 1.35, ciudad: 1.35, templo: 1.35, castillo: 1.3, auto: 1.3, velero: 1.3, volcan: 1.25, faro: 1.25 };
 function escenario(sec, asp) {
-  const an = ANCHO[sec.dataset.c] || 1.12;
+  const an = C[sec.dataset.c].ancho || ANCHO[sec.dataset.c] || 1.12;
   const caja = sec.firstElementChild.className === 'caja' ? sec.firstElementChild : $('.caja', sec), r = caja.getBoundingClientRect();
   if (asp > 1) {
     const libre = Math.max(W * .5, W - r.right);              // ancho libre a la derecha del texto
@@ -274,7 +339,7 @@ function rotaPortada(act, ms) {
   if (act.dataset.f || quieto) { cambio = 0; return; }
   if (!cambio || de !== c || hacia) { cambio = ms + 5000; return; }  // cuenta desde que ya se ve
   if (!proxima) proxima = saca();
-  if (!proxima.prog && !proxima.pend) proxima.pend = inicia(PRE + proxima.codigo + POST);
+  if (!proxima.prog && !proxima.pend) empieza(proxima);
   if (ms > cambio && toma(proxima)) { ponPortada(proxima); proxima = null; cambio = 0; }
 }
 function cuadro(ms) {
@@ -293,15 +358,16 @@ function cuadro(ms) {
   const k = quieto ? 1 : sujeto !== null ? .45 : .08; lam.x += (mx - lam.x) * k; lam.y += (my - lam.y) * k;
   cv.orbe = { x: (lam.x / asp + 1) / 2 * W, y: (1 - lam.y) / 2 * H };
   radio += ((sujeto !== null ? .1 : asp < 1 ? .07 : .06) - radio) * .2;
-  if (par && C[act.dataset.c].prog && !orden.some(o => o.pend && !listo(o.pend))) { const sg = orden.find(o => !o.prog && !o.pend); if (sg) sg.pend = inicia(PRE + sg.codigo + POST); }
+  if (par && C[act.dataset.c].prog && !orden.some(o => o.pend && !listo(o.pend))) { const sg = orden.find(o => !o.prog && !o.pend); if (sg) empieza(sg); }
   rotaPortada(act, ms); const c = C[act.dataset.c]; metamorfosis(c, ms);
-  for (const s of [secs[idx + 1], secs[idx - 1]]) if (s && !C[s.dataset.c].prog && !C[s.dataset.c].pend && c.prog) C[s.dataset.c].pend = inicia(PRE + C[s.dataset.c].codigo + POST);
-  FONDO[fam || seccionDe(c.id).dataset.f].forEach((x, i) => fondo[i] += (x - fondo[i]) * (quieto ? 1 : .05));
+  for (const s of [secs[idx + 1], secs[idx - 1]]) if (s && !C[s.dataset.c].prog && !C[s.dataset.c].pend && c.prog) empieza(C[s.dataset.c]);
+  (FONDOS[c.fondo] || FONDOS[c.grupo] || fondo).forEach((x, i) => fondo[i] += (x - fondo[i]) * (quieto ? 1 : .05));
   const tg = ms / 1000 - golpe, brinco = quieto || tg > 3 || tg < 0 ? 0 : Math.exp(-3 * tg) * Math.sin(tg * 11);
   const dibuja = (cri, capa) => {
     const prog = cri && cri.prog || vacio, u = prog.us;
     gl.bindFramebuffer(gl.FRAMEBUFFER, capas[capa].fb); gl.useProgram(prog.pr);
     gl.uniform2f(u.res, cols, filas); gl.uniform2f(u.centro, cx, cy); gl.uniform2f(u.lampara, lam.x, lam.y);
+    if (cri && cri.imagen && prog === cri.prog) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, cri.tex); gl.uniform1i(u.foto, 0); gl.uniform1f(u.prop, cri.prop); }
     gl.uniform1f(u.tiempo, t); gl.uniform1f(u.brinco, brinco); gl.uniform1f(u.esc, es * 2.8); gl.uniform1f(u.aspecto, asp);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   };

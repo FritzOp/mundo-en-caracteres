@@ -19,13 +19,13 @@ vec4 criatura(vec3 p, float t) {
   float llama = smoothstep(.15, .5, sin(a * 11. + 2.6 * sin(r * 5.) + r * 3.));
   llama *= smoothstep(.22, .4, r) * smoothstep(-2.5, -1.2, a);
   float camara = smoothstep(.12, .0, abs(sin(a * 7. - r * 3.5))) * smoothstep(-1.2, -2.2, a) * .5;
-  vec4 c = vec4(mix(HUESO * .92, vec3(.8, .25, .06), max(llama, camara)), d * .6);
+  vec4 c = vec4(mix(HUESO * .85, vec3(.48, .24, .1), max(llama, camara)), d * .6);
   // capucha parda, en cuña
   vec3 q = p - vec3(-.78, 0, 0);
   float rug = .015 * sin(q.x * 24.) * sin(q.y * 21.) * sin(q.z * 23.);
   float cap = elipse(q - vec3(-.14, -.0, 0), vec3(.3, .42, .36));
   cap = funde(cap, cono(q, vec3(-.16, -.05, 0), vec3(-.08, -.55, 0), .24, .07), .12);
-  c = une(c, vec4(vec3(.75, .32, .12), (cap + rug) * .65));
+  c = une(c, vec4(vec3(.4, .25, .15), (cap + rug) * .65));
   float cara = elipse(q - vec3(.06, -.06, 0), vec3(.36, .24, .36));
   c = une(c, vec4(vec3(.62, .42, .32), cara * .7));
   // ojo
@@ -132,7 +132,7 @@ vec4 criatura(vec3 p, float t) {
   ore = max(ore, -elipse(e - vec3(.02, 0, .12), vec3(.25, .18, .1)));
   ore = funde(ore, cono(q, vec3(-.08, 0, 0), vec3(.12, .04, 0), .12, .09), .08);
   d = funde(d, ore, .07);
-  vec3 piel = mix(vec3(.95, .6, .52), vec3(1., .78, .74), smoothstep(-.6, .8, p.y));
+  vec3 piel = mix(vec3(.82, .52, .47), vec3(.9, .7, .67), smoothstep(-.6, .8, p.y));
   piel = mix(piel, vec3(.72, .5, .6), smoothstep(-.45, -1.1, p.y) * .5);
   piel = mix(piel, vec3(1.05, .6, .42), smoothstep(.62, .8, abs(p.x)) * step(.3, p.y));
   // ventosas
@@ -141,7 +141,7 @@ vec4 criatura(vec3 p, float t) {
   // ojos con párpado
   q = vec3(abs(p.x) - .33, p.y - .03, p.z - .32);
   c = une(c, vec4(vec3(.85, .62, .68), esfera(q, .125)));
-  c = une(c, ojo(q - vec3(.02, 0, .06), .165, vec3(.25, .12, .4), vec3(0, .05, 1), vec3(.85, .55, .6)));
+  c = une(c, ojo(q - vec3(.02, 0, .06), .165, vec3(.07, .05, .06), vec3(0, .05, 1), vec3(.85, .55, .6)));
   return c;
 }` },
 { id:'ctenoforo', archivo:'ctenoforo.glsl', metros:500, codigo:
@@ -196,7 +196,7 @@ vec4 criatura(vec3 p, float t) {
   // puntas de los brazos, con luz
   vec3 q = ronda(p, 8.) - vec3(abre, -.95, 0);
   d = funde(d, capsula(q, vec3(-.02, .35, 0), vec3(.06, -.3, 0), .075), .1);
-  vec4 c = vec4(mix(ROJO, AZUL, smoothstep(.4, 1., length(p.xz))), d * .6);
+  vec4 c = vec4(mix(vec3(.45, .13, .12), vec3(.16, .13, .22), smoothstep(.3, 1., length(p.xz))), d * .6);
   float brilla = .5 + .5 * sin(t * 2. + gajo(p, 8.));
   c = une(c, vec4(CIAN * (1. + .9 * brilla),
                   esfera(q - vec3(.06, -.3, 0), .09)));
@@ -204,9 +204,9 @@ vec4 criatura(vec3 p, float t) {
   // aletas y ojos
   q = vec3(abs(p.x) - .5, p.y - .8, p.z);
   q.xy *= gira(.45 * sin(t * 3.) - .5);
-  c = une(c, vec4(ROJO * 1.2, elipse(q, vec3(.3, .13, .07)) * .8));
+  c = une(c, vec4(vec3(.42, .13, .12), elipse(q, vec3(.3, .13, .07)) * .8));
   q = vec3(abs(p.x) - .25, p.y - .28, p.z - .22);
-  c = une(c, ojo(q, .16, vec3(.1, .7, .95), vec3(.1, 0, 1), ROJO));
+  c = une(c, ojo(q, .16, vec3(.12, .42, .62), vec3(.1, 0, 1), vec3(.4, .12, .11)));
   
   return c;
 }` },
@@ -296,7 +296,7 @@ vec4 criatura(vec3 p, float t) {
   // aleta continua arriba y abajo, unida a la cola
   float perfil = .4 * smoothstep(-.1, .35, p.x) * smoothstep(1.85, .5, p.x) + .03 * sin(p.x * 9. - t * 3.);
   float aleta = max(max(abs(p.z) - .03, abs(p.y) - perfil), max(p.x - 1.7, -p.x));
-  vec3 piel = mix(vec3(1., .66, .62), vec3(.62, .66, 1.), cola);
+  vec3 piel = mix(vec3(.8, .6, .57), vec3(.6, .6, .72), cola);
   vec4 c = vec4(piel, d * .65);
   float radio = .5 + .5 * sin(p.x * 34.);
   c = une(c, vec4(mix(vec3(.75, .5, .7), vec3(.5, .6, 1.), cola) * (.7 + .3 * radio), aleta * .45));
@@ -309,6 +309,6 @@ vec4 criatura(vec3 p, float t) {
   float boca = smoothstep(.03, .0, abs(q.y + .08 * q.x)) * step(p.x, -.6);
   c.xyz *= 1. - .55 * boca * step(abs(c.w - d * .65), .001);
   q = vec3(p.x + .62, p.y - .12, abs(p.z) - .34);
-  return une(c, ojo(q, .13, vec3(.08, .15, .4), vec3(-.4, 0, 1), vec3(1., .66, .62)));
+  return une(c, ojo(q, .13, vec3(.04, .05, .07), vec3(-.4, 0, 1), vec3(1., .66, .62)));
 }` }
 ];

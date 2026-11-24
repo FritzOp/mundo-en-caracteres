@@ -19,7 +19,7 @@ vec4 criatura(vec3 p, float t) {
   float hil = sin(w.y * 24. + 3. * cos(w.z * 9.));
   float ala = elipse(w, vec3(.13, .62, .33)) - .014 * hil;
   ala = min(ala, elipse(w - vec3(-.06, -.5, -.1), vec3(.09, .48, .17)));
-  vec3 pl = mix(AMBAR * .75, vec3(.42, .36, .34), smoothstep(-.2, .8, sin(w.y * 12. + w.z * 8.)));
+  vec3 pl = mix(vec3(.62, .44, .24), vec3(.36, .33, .32), smoothstep(-.2, .8, sin(w.y * 12. + w.z * 8.)));
   float lunar = step(.8, fract(sin(dot(floor(w.yz * 15.), vec2(39.3, 11.7))) * 4375.));
   c = une(c, vec4(mix(pl, HUESO, lunar * .8), ala * .6));
   // cola
@@ -75,9 +75,9 @@ vec4 criatura(vec3 p, float t) {
   float lim = max(sup, inf_);
   float ala = max((R - lim) * .5, abs(w.z) - .025);
   float b = R / max(lim, .01);
-  vec3 azul = mix(vec3(.1, .3, 1.1), CIAN * 1.1, .5 + .5 * sin(ang * 6. + R * 3.));
+  vec3 azul = mix(vec3(.06, .2, .8), vec3(.2, .62, .95), .5 + .5 * sin(ang * 6. + R * 3.));
   azul = mix(azul, vec3(.05, .12, .4), smoothstep(.12, .0, abs(sin(A * 7.))) * .6);
-  azul = mix(azul, vec3(.16, .15, .34), smoothstep(.8, .9, b));
+  azul = mix(azul, vec3(.1, .09, .14), smoothstep(.8, .9, b));
   azul = mix(azul, HUESO, step(.75, sin(A * 26.)) * smoothstep(.82, .84, b) * smoothstep(.9, .88, b));
   return une(c, vec4(azul, ala * .55));
 }` },
@@ -103,10 +103,10 @@ vec4 criatura(vec3 p, float t) {
   // cabeza
   d = funde(d, elipse(q - vec3(0, .96, .18), vec3(.23, .17, .36)), .1);
   float bandas = smoothstep(.2, .5, sin(q.y * 16.)) * step(q.z, .4);
-  vec4 c = vec4(mix(vec3(.45, .55, .2), AMBAR, bandas), d * .6);
+  vec4 c = vec4(mix(vec3(.36, .33, .18), vec3(.75, .62, .36), bandas), d * .6);
   // ojos y lengua
   vec3 o = vec3(abs(q.x) - .165, q.y - 1.02, q.z - .34);
-  c = une(c, ojo(o, .115, AMBAR, vec3(.1, 0, 1), vec3(.5, .6, .22)));
+  c = une(c, ojo(o, .115, AMBAR, vec3(.1, 0, 1), vec3(.24, .22, .13)));
   float saca = .15 + .15 * max(0., sin(t * 5.));
   c = une(c, vec4(ROJO * 1.5, capsula(q, vec3(0, .92, .48), vec3(0, .84, .52 + saca), .03)));
   return c;
@@ -138,8 +138,8 @@ vec4 criatura(vec3 p, float t) {
   q = p; q.y -= .05 * sin(p.x * 6. - t * 2.) * smoothstep(.6, 1.1, p.x);
   d = funde(d, curva(q, vec3(.66, -.06, 0), vec3(.98, -.1, 0), vec3(1.15, -.45, 0), .1, .02), .06);
   float brillo = smoothstep(.25, .0, abs(sin(p.x * 5. + p.y * 7. + t * .5)));
-  vec3 piel = mix(vec3(.62, .75, .95), HUESO, smoothstep(-.3, .6, p.y));
-  vec4 c = vec4(mix(piel, CIAN * 1.12, brillo * .35), d * .7);
+  vec3 piel = mix(vec3(.5, .58, .7), vec3(.85, .86, .88), smoothstep(-.3, .6, p.y));
+  vec4 c = vec4(mix(piel, vec3(.5, .75, .85), brillo * .2), d * .7);
   // astas simétricas
   q = p - vec3(-.44, .7, .02); q.x = abs(q.x);
   float a = curva(q, vec3(.04, 0, 0), vec3(.62, .02, 0), vec3(.5, .75, 0), .04, .018);
@@ -147,7 +147,7 @@ vec4 criatura(vec3 p, float t) {
   a = min(a, cono(q, vec3(.42, .26, 0), vec3(.66, .5, .05), .028, .01));
   a = min(a, cono(q, vec3(.47, .4, 0), vec3(.36, .66, .06), .026, .01));
   a = min(a, cono(q, vec3(.1, .03, 0), vec3(.2, .16, .22), .025, .01));
-  c = une(c, vec4(vec3(.55, .85, 1.12), a * .8));
+  c = une(c, vec4(vec3(.6, .8, 1.), a * .8));
   // luna creciente y perla
   q = p - vec3(-.44, 1.06, 0);
   float luna = max(elipse(q, vec3(.25, .25, .1)), -(length(q.xy - vec2(.1, .06)) - .2));
@@ -183,7 +183,7 @@ vec4 criatura(vec3 p, float t) {
   d = funde(d, elipse(f + vec3(0, .38, 0), vec3(.15, .48, .07)), .12);
   // volumen de nube
   d -= .035 * sin(p.x * 9. + 1.) * sin(p.y * 10.) * sin(p.z * 9.) + .016 * sin(p.x * 19.) * sin(p.y * 21.) * sin(p.z * 18. + t);
-  vec3 tono = mix(vec3(.45, .62, .95), HUESO, smoothstep(-.35, .2, p.y));
+  vec3 tono = mix(vec3(.36, .45, .58), vec3(.8, .83, .86), smoothstep(-.35, .2, p.y));
   // estrellas y boca
   vec3 id = floor(p * 11.);
   float est = step(.9, fract(sin(dot(id, vec3(12.9, 78.2, 37.7))) * 43758.)) * smoothstep(.12, -.1, p.y) * smoothstep(-.95, -.5, p.x);
@@ -192,7 +192,7 @@ vec4 criatura(vec3 p, float t) {
   tono *= 1. - .75 * boca;
   vec4 c = vec4(tono, d * .55);
   f = vec3(p.x + .38, p.y - .06, abs(p.z) - .38);
-  c = une(c, ojo(f, .13, vec3(.15, .35, .8), vec3(-.25, .05, 1), vec3(.6, .72, .95)));
+  c = une(c, ojo(f, .13, vec3(.12, .14, .18), vec3(-.25, .05, 1), vec3(.5, .56, .64)));
   // jirones de niebla
   for (int i = 0; i < 3; i++) {
     float k = float(i);
@@ -238,10 +238,10 @@ vec4 criatura(vec3 p, float t) {
   d += .015 * (abs(sin(p.x * 13. + p.y * 5.)) - abs(sin(p.y * 12. + p.z * 9.)));
   float g = grieta(p * 1.15 + .3);
   float late = .7 + .3 * sin(t * 2. + p.x * 4.);
-  vec3 roca = mix(vec3(.27, .21, .25), vec3(.46, .36, .4), smoothstep(-.6, .7, p.y));
+  vec3 roca = mix(vec3(.26, .24, .26), vec3(.46, .43, .44), smoothstep(-.6, .7, p.y));
   vec4 c = vec4(mix(roca, vec3(1.8, .65, .14) * late, g * smoothstep(-1.1, -.3, p.y)), d * .6);
   // ojos y trufa
-  c = une(c, ojo(o - vec3(-.12, .05, .15), .095, vec3(1., .5, .08), vec3(-.45, 0, 1), vec3(.55, .32, .4)));
+  c = une(c, ojo(o - vec3(-.12, .05, .15), .095, vec3(1., .5, .08), vec3(-.45, 0, 1), vec3(.25, .23, .24)));
   c = une(c, vec4(vec3(.05), esfera(k - vec3(-.43, -.1, 0), .045)));
   // cola de fuego
   for (int i = 0; i < 9; i++) {
@@ -304,9 +304,8 @@ vec4 criatura(vec3 p, float t) {
   // placas: ranuras que dejan ver las brasas
   float ranura = smoothstep(.2, .05, abs(sin(p.y * 15. + p.x * 4.)));
   float frente = smoothstep(-.1, -.45, p.x - .25 * p.y) * step(-1., p.y);
-  vec3 piel = mix(vec3(.62, .1, .16), vec3(.95, .28, .16), smoothstep(-.6, .7, p.y));
+  vec3 piel = mix(vec3(.38, .15, .13), vec3(.62, .3, .22), smoothstep(-.6, .7, p.y));
   piel = mix(piel, vec3(1.7, .65, .15), ranura * frente * (.5 + .3 * sin(t * 2.)));
-  piel = mix(piel, vec3(1.7, .7, .2), smoothstep(1.2, 1.05, length(p.xy - vec2(1.0, -1.35))) * 0. + step(d, cola + .001) * smoothstep(1.25, 1.02, p.x) * step(-.4, p.y) * step(.9, p.x));
   vec4 c = vec4(piel, d * .6);
   c = une(c, vec4(HUESO * .9, cue * .7));
   c = une(c, ojo(u - vec3(-.06, .07, .1), .1, AMBAR, vec3(-.35, .1, 1), vec3(.7, .2, .16)));
@@ -326,12 +325,12 @@ vec4 criatura(vec3 p, float t) {
     float ala = max(abs(w.z - .12 * r * r) - .022, r - lim);
     ala = max(ala, max((a - .14) * r, (-2.05 - a) * r));
     float hue = smoothstep(.12, .0, dedo);
-    vec3 tono = mix(vec3(.42, .09, .12), vec3(.85, .5, .3), hue);
+    vec3 tono = mix(vec3(.4, .13, .11), vec3(.62, .4, .28), hue);
     c = une(c, vec4(tono, ala * .4 * esc));
     float br = cono(w, vec3(0, 0, 0), vec3(m, 0.), .07, .05);
     br = min(br, cono(w, vec3(m, 0.), vec3(m + vec2(-.05, .16), 0.), .04, .005));
     br = min(br, cono(w, vec3(m, 0.), vec3(m + vec2(1.26, .16), .18), .045, .012));
-    c = une(c, vec4(vec3(.75, .35, .25), br * .7 * esc));
+    c = une(c, vec4(vec3(.45, .24, .18), br * .7 * esc));
   }
   // aliento
   float fuego = smoothstep(.55, 1., abre);
@@ -353,21 +352,18 @@ vec4 criatura(vec3 p, float t) {
   d = max(d, -p.y - .75);
   // núcleo visible a través de la piel
   float nucleo = smoothstep(.5, .0, length(p.xy - vec2(.3 * sin(t), -.3)));
-  vec3 piel = mix(vec3(.18, .62, .22), vec3(.7, 1.5, .3), nucleo);
+  vec3 piel = mix(vec3(.12, .33, .16), vec3(.5, 1.15, .28), nucleo);
   vec4 c = vec4(piel, d * .6);
   // burbujas que suben
   for (int i = 0; i < 5; i++) {
     float f = float(i), s = fract(t * .25 + f * .37);
     vec3 b = vec3(.6 * sin(f * 2.4), -.55 + 1.15 * s, .45 * cos(f * 2.4));
     d = esfera(p - b, .13 * sin(s * 3.14) + .01);
-    c = une(c, vec4(vec3(.6, 1.35, .4), d * .7));
+    c = une(c, vec4(vec3(.25, .5, .22), d * .7));
   }
-  // ojos desparejos
-  c = une(c, vec4(HUESO * 1.3, esfera(p - vec3(-.3, .3, .8), .135)));
-  c = une(c, vec4(HUESO * 1.3, esfera(p - vec3(.3, .36, .8), .115)));
-  vec2 m = .05 * vec2(sin(t * .9), cos(t * .7));
-  c = une(c, vec4(vec3(.01), esfera(p - vec3(-.3 + m.x, .3 + m.y, .88), .085)));
-  c = une(c, vec4(vec3(.01), esfera(p - vec3(.3 + m.x, .36 + m.y, .87), .07)));
+  // ojos tragados, medio hundidos
+  c = une(c, ojo(p - vec3(-.3, .3, .8), .2, vec3(.5, .32, .1), vec3(-.1, 0, 1), vec3(.14, .34, .17)));
+  c = une(c, ojo(p - vec3(.3, .36, .8), .15, vec3(.4, .3, .12), vec3(.1, 0, 1), vec3(.14, .34, .17)));
   return c;
 }` },
 { id:'mimico', archivo:'mimico.glsl', codigo:
@@ -381,7 +377,7 @@ vec4 criatura(vec3 p, float t) {
   float d = caja(p + vec3(0, .45, 0), vec3(.9, .42, .58)) - .02;
   d = max(d, -caja(p + vec3(0, .1, 0), vec3(.8, .42, .48)));
   float tabla = smoothstep(.06, .0, abs(fract(p.y * 4.) - .5) - .04);
-  vec4 c = vec4(mix(vec3(.55, .28, .1), vec3(.22, .1, .04), tabla), d * .8);
+  vec4 c = vec4(mix(vec3(.36, .22, .12), vec3(.13, .07, .035), tabla), d * .8);
   // tapa: gira en la bisagra de atrás y cierra justo sobre la base
   vec3 q = p - vec3(0, -.01, -.58);
   q.yz *= gira(abre);
@@ -390,12 +386,12 @@ vec4 criatura(vec3 p, float t) {
   float tapa = max(max(cil - .54, -q.y), abs(q.x) - .92);
   tapa = max(tapa, -max(cil - .44, abs(q.x) - .82));
   float tab2 = smoothstep(.06, .0, abs(fract(atan(q.y, q.z) * 2.6) - .5) - .04);
-  c = une(c, vec4(mix(vec3(.6, .31, .12), vec3(.22, .1, .04), tab2), tapa * .65));
+  c = une(c, vec4(mix(vec3(.38, .23, .13), vec3(.13, .07, .035), tab2), tapa * .65));
   // herrajes sobre base y tapa
   float fr = abs(abs(p.x) - .62) - .07;
   float hb = max(max(fr, caja(p + vec3(0, .45, 0), vec3(.95, .45, .61)) - .02), -caja(p + vec3(0, .1, 0), vec3(.8, .45, .5)));
   float ht = max(max(abs(abs(q.x) - .62) - .07, max(cil - .565, -q.y)), -(cil - .5));
-  c = une(c, vec4(AMBAR * .95, min(hb, ht) * .7));
+  c = une(c, vec4(vec3(.55, .43, .24), min(hb, ht) * .7));
   // encías y dientes: los de abajo en el borde de la base, los de arriba en el de la tapa
   vec3 e = vec3(p.x - .2 * clamp(round(p.x / .2), -4., 4.), p.y + .0, p.z - .53);
   c = une(c, vec4(HUESO, cono(e, vec3(0, -.06, 0), vec3(0, .17, -.03), .075, .012) * .7));
@@ -404,7 +400,7 @@ vec4 criatura(vec3 p, float t) {
   // lengua: sale de dentro, pasa sobre el borde y cuelga por delante
   vec3 l = p; l.x -= .1 * sin(p.z * 3. + t * 2.5) * smoothstep(.3, .9, p.z);
   float len = curva(l, vec3(0, -.15, -.2), vec3(0, .25, .75), vec3(0, -.5, .82), .15, .09);
-  c = une(c, vec4(ROJO * 1.15, len * .65));
+  c = une(c, vec4(vec3(.5, .15, .15), len * .65));
   // ojos en el fondo oscuro
   c = une(c, vec4(vec3(.05, .02, .02), caja(p + vec3(0, .12, .05), vec3(.78, .02, .42))));
   vec3 o = vec3(abs(p.x) - .3, p.y - .08, p.z + .1);
@@ -431,7 +427,7 @@ vec4 criatura(vec3 p, float t) {
   d = funde(d, cono(mg, vec3(.22, .2, .05), vec3(.5, .06, .42), .17, .13), .15);
   d = max(d, -elipse(p - vec3(0, .6, .36), vec3(.26, .35, .34)));
   float hueco = smoothstep(.03, .0, elipse(p - vec3(0, .6, .36), vec3(.26, .35, .34)));
-  vec3 tela = mix(AZUL * .9, vec3(.35, .3, .5), cae);
+  vec3 tela = mix(vec3(.24, .28, .38), vec3(.32, .31, .4), cae);
   vec4 c = vec4(tela * (1. - hueco), d * .6);
   // ojos
   vec3 o = vec3(abs(p.x) - .12, p.y - .62, p.z - .18);
@@ -465,7 +461,7 @@ vec4 criatura(vec3 p, float t) {
   float cola = length(vec2(length(r.xz * vec2(.82, 1.1)) - .72, r.y)) - gr - .025 * max(0., sin(ac * 26.)) * step(0., r.y);
   d = min(d, cola * .85);
   float placa = .012 * sin(p.y * 32.) + .01 * sin(p.x * 30.) * sin(p.y * 26.);
-  vec4 c = vec4(vec3(.3, .62, .3), (d + placa) * .6);
+  vec4 c = vec4(vec3(.31, .34, .22), (d + placa) * .6);
   // roca
   r = p + vec3(0, 1.2, 0);
   c = une(c, vec4(vec3(.16, .15, .13), (elipse(r, vec3(1.0, .16, .65)) + .04 * sin(r.x * 11.) * sin(r.z * 9.)) * .6));
@@ -490,7 +486,7 @@ vec4 criatura(vec3 p, float t) {
     vec3 o = vec3(abs(k.x), k.yz);
     float cu = cono(o, vec3(.06, .07, -.04), vec3(.13, .2, -.2), .035, .004);
     cu = min(cu, cono(o, vec3(.0, .09, -.02), vec3(.0, i == 0 ? .3 : .16, -.12), .035, .004));
-    vec3 piel = mix(vec3(.32, .68, .32), AMBAR * 1.05, i == 0 ? .75 : .12 * sin(f));
+    vec3 piel = mix(vec3(.34, .38, .23), vec3(.75, .58, .3), i == 0 ? .85 : .12 * sin(f));
     c = une(c, vec4(piel, funde(cue, min(cab, cu), .03) * .6));
     c = une(c, ojo(o - vec3(.075, .065, .06), .06, vec3(.95, .35, .05), vec3(.3, .1, .9), piel));
   }
@@ -514,7 +510,7 @@ vec4 criatura(vec3 p, float t) {
   float d = length(s) - r - .022 * (1. - pl);
   // espinas en la cola
   d -= .05 * max(0., sin(a * 22.)) * smoothstep(.22, .05, f) * smoothstep(.9, .0, abs(v));
-  vec3 piedra = mix(vec3(.16, .42, .5), vec3(.3, .68, .7), pl);
+  vec3 piedra = mix(vec3(.26, .31, .34), vec3(.46, .52, .55), pl);
   // banda de runas
   float banda = smoothstep(.16, .12, abs(v - 1.25));
   vec2 id = vec2(floor(a * 10.), floor(v * 14.)), sub = fract(vec2(a * 30., v * 14.));
@@ -539,8 +535,8 @@ vec4 criatura(vec3 p, float t) {
   cu = min(cu, cono(u, vec3(-.12, -.1, .16), vec3(-.36, -.2, .26), .045, .008));
   cu = min(cu, cono(u, vec3(.36, .13, .03), vec3(.4, .27, .05), .035, .006));
   cab += .012 * sin(k.x * 30.) * sin(k.y * 28.);
-  c = une(c, vec4(vec3(.28, .66, .68), min(cab, cu) * .65));
-  c = une(c, ojo(u - vec3(.12, .1, .16), .1, vec3(.1, .7, .9), vec3(.3, 0, 1), vec3(.25, .6, .62)));
+  c = une(c, vec4(vec3(.4, .46, .49), min(cab, cu) * .65));
+  c = une(c, ojo(u - vec3(.12, .1, .16), .1, vec3(.1, .7, .9), vec3(.3, 0, 1), vec3(.36, .42, .45)));
   vec3 n = vec3(k.x - .3 - .09 * clamp(round((k.x - .3) / .09), -1., 1.), k.y + .0, abs(k.z) - .09);
   return une(c, vec4(HUESO * 1.1, cono(n, vec3(0, .02, 0), vec3(0, -.09, 0), .03, .004)));
 }` },
@@ -556,7 +552,7 @@ vec4 criatura(vec3 p, float t) {
   d = funde(d, elipse(p - vec3(0, .63, .12), vec3(.18, .17, .17)), .05);
   // pecho en escamas con forma de V
   float uve = sin((p.y + q.x * .9) * 34.);
-  vec3 pecho = mix(vec3(.75, .12, .08), AMBAR * 1.35, smoothstep(.1, .8, uve) * smoothstep(-.3, .25, p.y) * step(0., p.z));
+  vec3 pecho = mix(vec3(.5, .1, .06), vec3(.95, .55, .2), smoothstep(.1, .8, uve) * smoothstep(-.3, .25, p.y) * step(0., p.z));
   vec4 c = vec4(pecho, (d - .012 * uve) * .65);
   c = une(c, vec4(vec3(.5, .4, .35), cono(p, vec3(0, .58, .26), vec3(0, .5, .4), .06, .015)));
   c = une(c, ojo(q - vec3(.085, .66, .22), .085, vec3(.85, .3, .05), vec3(.05, 0, 1), vec3(1., .5, .15)));
@@ -579,7 +575,7 @@ vec4 criatura(vec3 p, float t) {
     s.xy *= gira(-(.85 - f * 2.));
     float L = .4 - .12 * f;
     float punta = smoothstep(.2, 1.9 * L, s.x);
-    c = une(c, vec4(mix(vec3(.72, .08, .08), vec3(1.6, .8, .22), punta * punta), elipse(s - vec3(L, 0, 0), vec3(L, .075, .035)) * .55));
+    c = une(c, vec4(mix(vec3(.42, .06, .05), vec3(1.25, .58, .16), punta * punta), elipse(s - vec3(L, 0, 0), vec3(L, .075, .035)) * .55));
   }
   // cobertoras, por delante
   for (int i = 0; i < 6; i++) {
@@ -588,7 +584,7 @@ vec4 criatura(vec3 p, float t) {
     vec3 s = w - vec3(mix(mix(vec2(0), vec2(.35, .1), u), mix(vec2(.35, .1), vec2(.62, .42), u), u), .05);
     s.xy *= gira(-(.6 - f * 1.8));
     float punta = smoothstep(.1, .42, s.x);
-    c = une(c, vec4(mix(vec3(.85, .16, .08), vec3(1.5, .95, .3), punta), elipse(s - vec3(.2, 0, 0), vec3(.24, .075, .04)) * .6));
+    c = une(c, vec4(mix(vec3(.5, .11, .06), vec3(1.1, .6, .2), punta), elipse(s - vec3(.2, 0, 0), vec3(.24, .075, .04)) * .6));
   }
   c = une(c, vec4(vec3(1., .3, .12), curva(w, vec3(0, 0, .05), vec3(.35, .1, .05), vec3(.62, .42, .0), .085, .03) * .7));
   // patas
@@ -612,7 +608,7 @@ vec4 criatura(vec3 p, float t) {
   c = une(c, vec4(vec3(1.7, .8, .2), elipse(ti, vec3(.13, .05, .04)) * .6));
   // hoguera
   vec3 h = p + vec3(.05 * sin(p.y * 8. - t * 6.), .86, 0);
-  float fu = elipse(h, vec3(.17 - .14 * h.y, .38, .13)) + .05 * sin(h.x * 16.) * sin(h.y * 7. - t * 7.);
+  float fu = elipse(h, vec3(max(.04, .17 - .14 * h.y), .38, .13)) + .05 * sin(h.x * 16.) * sin(h.y * 7. - t * 7.);
   return une(c, vec4(mix(vec3(1.8, 1.1, .4), vec3(1.5, .4, .1), smoothstep(-.2, .3, h.y)), fu * .5));
 }` },
 { id:'kraken', archivo:'kraken.glsl', codigo:
@@ -648,7 +644,7 @@ vec4 criatura(vec3 p, float t) {
     br = min(br, rizo * .7);
     d = funde(d, br, .07);
   }
-  vec3 piel = mix(vec3(.3, .26, .5), vec3(.46, .6, .85), smoothstep(-.7, 1., p.y));
+  vec3 piel = mix(vec3(.24, .33, .4), vec3(.5, .62, .68), smoothstep(-.7, 1., p.y));
   // ventosas claras por debajo de los brazos
   float punto = smoothstep(.5, .9, sin(p.x * 34.) * sin(p.y * 34.));
   piel = mix(piel, vec3(.8, .75, .72), punto * smoothstep(-.02, -.25, p.y) * .8);
@@ -682,9 +678,9 @@ vec4 criatura(vec3 p, float t) {
   float pl = sin(u * 16. + 2. * sin(p.x * 13. + p.y * 9.) + p.z * 12.);
   float capa = sin(p.x * 25. + p.y * 19. + u * 4.);
   d -= .03 * pl * capa;
-  vec3 tono = mix(vec3(.05, .5, .34), CIAN * .9, smoothstep(-.3, .9, pl));
-  tono = mix(tono, vec3(.1, .3, .85), smoothstep(.55, 1., capa) * .6);
-  tono = mix(tono, AMBAR * 1.1, smoothstep(.75, 1., pl * capa));
+  vec3 tono = mix(vec3(.03, .27, .19), vec3(.16, .58, .5), smoothstep(-.3, .9, pl));
+  tono = mix(tono, vec3(.08, .2, .5), smoothstep(.55, 1., capa) * .6);
+  tono = mix(tono, vec3(.7, .55, .25), smoothstep(.75, 1., pl * capa));
   vec4 c = vec4(tono, d * .5);
   // cola escamada con cascabel
   float co = curva(p, vec3(-.05, -.3, .2), vec3(-.62, -1.2, .2), vec3(.18, -1.12, .22), .12, .05);
@@ -700,7 +696,7 @@ vec4 criatura(vec3 p, float t) {
   vec3 j = k - vec3(-.02, -.12, 0); j.xy *= gira(-.12 - .25 * ab);
   cab = min(cab, cono(j, vec3(.04, .02, 0), vec3(-.3, 0, 0), .09, .045));
   float gre = step(.5, fract(k.x * 9.)) * step(abs(k.y - .08), .025);
-  c = une(c, vec4(mix(vec3(.25, .6, .48), AMBAR * 1.2, gre), cab * .7));
+  c = une(c, vec4(mix(vec3(.24, .4, .33), vec3(.75, .6, .3), gre), cab * .7));
   vec3 z = vec3(k.x + .08, k.y - .07, abs(k.z) - .14);
   c = une(c, ojo(z, .085, AMBAR, vec3(-.4, .05, 1), vec3(.2, .6, .45)));
   z = vec3(k.x + .12 - .08 * clamp(round((k.x + .12) / .08), -2., 1.), k.y + .07, abs(k.z) - .08);
@@ -712,8 +708,8 @@ vec4 criatura(vec3 p, float t) {
     float g = (float(i) - 5.) * .31 + .12;
     vec3 s = p - vec3(-.06, .72, .06);
     s.xy *= gira(g + .03 * sin(t * 2. + g * 3.));
-    vec3 tp = mix(vec3(.08, .65, .45), i % 2 == 0 ? CIAN * 1.15 : vec3(.2, .45, 1.), smoothstep(.2, .5, s.y));
-    tp = mix(tp, AMBAR * 1.2, smoothstep(.025, .0, abs(s.x)) * .6);
+    vec3 tp = mix(vec3(.05, .38, .26), i % 2 == 0 ? vec3(.2, .62, .55) : vec3(.14, .3, .62), smoothstep(.2, .5, s.y));
+    tp = mix(tp, vec3(.7, .56, .28), smoothstep(.025, .0, abs(s.x)) * .6);
     float L = i % 2 == 0 ? .36 : .29;
     c = une(c, vec4(tp, elipse(s - vec3(0, L, 0), vec3(.075, L, .04)) * .6));
   }
@@ -730,7 +726,7 @@ vec4 criatura(vec3 p, float t) {
   vec3 q = p;
   float placa = .03 * sin(q.x * 9.) * sin(q.z * 9.);
   float d = max(elipse(q, vec3(1.1, .62, .85)) + placa, -q.y - .08);
-  vec3 tierra = mix(vec3(.4, .3, .15), vec3(.22, .6, .25), smoothstep(.25, .45, q.y));
+  vec3 tierra = mix(vec3(.3, .25, .18), vec3(.2, .38, .18), smoothstep(.25, .45, q.y));
   vec4 c = vec4(tierra, d * .6);
   // vientre, cabeza y aletas
   float b = elipse(p + vec3(0, .12, 0), vec3(1., .2, .75));
@@ -740,7 +736,7 @@ vec4 criatura(vec3 p, float t) {
   vec3 f = vec3(abs(p.x - .05) - .6, p.y + .18, abs(p.z) - .85);
   f.yz *= gira(.3 * sin(t * 1.2 + lado * .4));
   b = funde(b, elipse(f, vec3(.2, .06, .45)), .12);
-  c = une(c, vec4(vec3(.25, .5, .5), b * .7));
+  c = une(c, vec4(vec3(.22, .34, .33), b * .7));
   k.z = abs(k.z) - .24;
   c = une(c, ojo(k - vec3(.12, .08, 0), .115, vec3(.5, .3, .05), vec3(.4, .05, 1), vec3(.28, .55, .52)));
   // palmeras
@@ -752,7 +748,7 @@ vec4 criatura(vec3 p, float t) {
     c = une(c, vec4(vec3(.5, .32, .15), capsula(s, vec3(0, -.1, 0), vec3(0, alto, 0), .035)));
     s.y -= alto;
     vec3 h = ronda(s, 5.); h.xy *= gira(-.45);
-    c = une(c, vec4(vec3(.25, .85, .3), elipse(h - vec3(.18, 0, 0), vec3(.2, .045, .07)) * .7));
+    c = une(c, vec4(vec3(.2, .46, .2), elipse(h - vec3(.18, 0, 0), vec3(.2, .045, .07)) * .7));
   }
   // fogata de los marineros
   c = une(c, vec4(vec3(1.7, .7, .2), elipse(p - vec3(.1, .66, .3), vec3(.05, .1 + .03 * sin(t * 9.), .05)) * .7));
@@ -795,7 +791,7 @@ vec4 criatura(vec3 p, float t) {
   d = min(d, caja(k, vec3(.17, .19, .17)) - .05);
   d += .012 * sin(p.x * 17.) * sin(p.y * 15. + 2.) * sin(p.z * 16.);
   float g = grieta(p * 1.3);
-  vec3 piedra = mix(vec3(.6, .44, .29), vec3(.3, .14, .08), g * .85);
+  vec3 piedra = mix(vec3(.5, .43, .36), vec3(.12, .1, .08), g * .85);
   float tabl = step(abs(k.x), .19) * step(abs(k.y - .03), .125) * step(.19, k.z);
   piedra = mix(piedra, vec3(.1, .06, .04), tabl);
   vec4 c = vec4(piedra, d * .7);
