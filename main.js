@@ -226,42 +226,110 @@ function mide() {
 
 let raton = null, ultimo = -1e9; const lam = { x: .6, y: .5 };
 addEventListener('pointermove', e => { if (e.pointerType === 'touch') return; raton = [e.clientX, e.clientY]; ultimo = performance.now(); pide(); });
-// En pantallas táctiles: si el dedo cae sobre el orbe, lo arrastra y la página no se mueve.
-// Si cae en cualquier otro sitio, el desplazamiento es el normal.
-let hondo = scrollY, sujeto = null, radio = .06;
-const enOrbe = t => cv.orbe && Math.hypot(t.clientX - cv.orbe.x, t.clientY - cv.orbe.y) < 58;
-const lleva = t => { raton = [t.clientX, t.clientY]; ultimo = performance.now(); pide(); };
-document.addEventListener('touchstart', e => {
-  const t = e.changedTouches[0];
-  if (sujeto !== null) { e.preventDefault(); return; }
-  if (e.touches.length > 1 || !enOrbe(t) || t.target.closest('#familias')) return;
-  sujeto = t.identifier; e.preventDefault(); lleva(t);
-}, { passive: false });
-document.addEventListener('touchmove', e => {
-  if (sujeto === null) return;
-  e.preventDefault();
-  for (const t of e.changedTouches) if (t.identifier === sujeto) lleva(t);
-}, { passive: false });
-for (const ev of ['touchend', 'touchcancel']) document.addEventListener(ev, e => {
-  for (const t of e.changedTouches) if (t.identifier === sujeto) { sujeto = null; ultimo = performance.now(); pide(); }
-});
 const secs = $$('section');
-// La obra cambia en cuanto se empieza a entrar en la siguiente, según hacia dónde se va
-let rumbo = 1, yAnt = scrollY;
-addEventListener('scroll', () => { if (scrollY !== yAnt) rumbo = scrollY > yAnt ? 1 : -1; yAnt = scrollY; }, { passive: true });
-function estado() {
-  const m = innerHeight * (rumbo > 0 ? .88 : .12); let idx = 0;
-  secs.forEach((s, i) => { if (s.getBoundingClientRect().top <= m) idx = i; });
-  return { act: secs[idx], idx };
+const limita = (x, a, b) => Math.max(a, Math.min(b, x));
+
+// ---- Paso de obra. No hay desplazamiento nativo: cada gesto lleva a una obra exacta.
+let pag = 0, hondo = 0, reloj = 0;
+const indiceDe = id => { const el = id && document.getElementById(id); return el ? secs.indexOf(el.closest('section')) : -1; };
+function ir(i) {
+  i = limita(i, 0, secs.length - 1);
+  if (i === pag) return false;
+  pag = i; velGiro = 0;
+  try { sessionStorage.setItem('pag', i); } catch (e) {}
+  ponTexto(secs[i]); pide();
+  // la línea de avance y el contador solo se ven mientras se pasa de obra
+  document.body.classList.add('pasando'); clearTimeout(reloj); reloj = setTimeout(() => document.body.classList.remove('pasando'), 900);
+  return true;
 }
-// El texto no se desplaza: el de la obra anterior se desvanece y aparece el nuevo
+const estado = () => ({ act: secs[pag], idx: pag });
+// El texto se queda en su sitio: el anterior se desvanece y aparece el nuevo
 let textoAct = null;
 function ponTexto(sec) {
   if (sec === textoAct) return;
   textoAct = sec;
   secs.forEach(s => s.classList.toggle('activa', s === sec));
+  const k = obrasSec.indexOf(sec);
+  cuenta.textContent = k < 0 ? '' : (k + 1) + ' / ' + obrasSec.length;
+  barra.style.transform = 'scaleY(' + (pag / (secs.length - 1)) + ')';
+  mideTexto();
 }
-addEventListener('focusin', e => { const s = e.target.closest('section'); if (s && s !== textoAct) s.scrollIntoView(); });
+const obrasSec = secs.filter(s => s.dataset.f), cuenta = $('#cuenta'), barra = $('#avance i');
+// solo se desplaza por dentro el texto que no cabe
+const mideTexto = () => { const k = textoAct && $('.caja', textoAct); if (k) k.classList.toggle('desborda', k.scrollHeight > k.clientHeight + 2); };
+document.addEventListener('toggle', () => { mideTexto(); pide(); }, true);
+addEventListener('resize', mideTexto);
+addEventListener('focusin', e => { const i = secs.indexOf(e.target.closest('section')); if (i >= 0) ir(i); });
+// ¿el texto bajo el dedo o el cursor todavía puede moverse en esa dirección?
+const cajaLibre = (el, baja) => { const k = el.closest && el.closest('.desborda'); return k && (baja ? k.scrollTop + k.clientHeight < k.scrollHeight - 2 : k.scrollTop > 2); };
+
+// Enlaces del menú, del índice y de la portada
+const hashDe = sec => sec.dataset.f ? '#' + sec.dataset.f : '#inicio';
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]'); if (!a) return;
+  const i = indiceDe(a.hash.slice(1)); if (i < 0) return;
+  e.preventDefault(); a.blur(); ir(i);
+  if (location.hash !== hashDe(secs[i])) history.pushState(null, '', hashDe(secs[i]));
+});
+addEventListener('popstate', () => {
+  const id = location.hash.slice(1), i = id ? indiceDe(id) : 0;
+  if (i >= 0 && !(GRUPOS.some(g => g.id === id) && secs[pag].dataset.f === id)) ir(i);
+});
+
+// Dedo: sobre el orbe lo arrastra; en vertical pasa de obra; en horizontal la gira (más abajo)
+let sujeto = null, radio = .06, gesto = null;
+const enOrbe = t => cv.orbe && Math.hypot(t.clientX - cv.orbe.x, t.clientY - cv.orbe.y) < 52;
+const lleva = t => { raton = [t.clientX, t.clientY]; ultimo = performance.now(); pide(); };
+const suyo = (e, id) => [...e.changedTouches].find(t => t.identifier === id);
+document.addEventListener('touchstart', e => {
+  const t = e.changedTouches[0];
+  if (sujeto !== null) { e.preventDefault(); return; }
+  if (e.touches.length > 1) { gesto = null; return; }
+  if (t.target.closest('#familias')) return;
+  if (enOrbe(t) && !t.target.closest('a,summary')) { sujeto = t.identifier; e.preventDefault(); lleva(t); return; }
+  gesto = { id: t.identifier, x: t.clientX, y: t.clientY, y0: t.clientY, t: performance.now(), modo: null, pasos: 0, el: t.target };
+}, { passive: false });
+document.addEventListener('touchmove', e => {
+  if (sujeto !== null) { e.preventDefault(); const t = suyo(e, sujeto); if (t) lleva(t); return; }
+  const t = gesto && suyo(e, gesto.id); if (!t) return;
+  const dx = t.clientX - gesto.x, dy = t.clientY - gesto.y;
+  if (!gesto.modo) {
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 8) return;
+    gesto.modo = agarre && agarre.gira || Math.abs(dx) > Math.abs(dy) ? 'h' : cajaLibre(gesto.el, dy < 0) ? 'texto' : 'v';
+  }
+  if (gesto.modo !== 'v') return;
+  if (e.cancelable) e.preventDefault();
+  agarre = null;
+  // el primer paso pide poco recorrido; si el dedo sigue, avanza más obras
+  const d = t.clientY - gesto.y0, umbral = gesto.pasos ? 100 : 30;
+  if (Math.abs(d) >= umbral) { if (ir(pag + (d < 0 ? 1 : -1))) gesto.pasos++; gesto.y0 = t.clientY; }
+}, { passive: false });
+for (const ev of ['touchend', 'touchcancel']) document.addEventListener(ev, e => {
+  if (sujeto !== null && suyo(e, sujeto)) { sujeto = null; ultimo = performance.now(); pide(); }
+  const t = gesto && suyo(e, gesto.id); if (!t) return;
+  const dy = t.clientY - gesto.y;
+  if (ev === 'touchend' && gesto.modo === 'v' && !gesto.pasos && Math.abs(dy) > 14 && performance.now() - gesto.t < 260) ir(pag + (dy < 0 ? 1 : -1));
+  gesto = null;
+});
+// Rueda y trackpad: un paso por gesto, descartando la inercia
+let rAcum = 0, rUlt = -1e9, rPaso = -1e9, rAbs = 0;
+addEventListener('wheel', e => {
+  if (e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+  const d = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? innerHeight : 1);
+  if (cajaLibre(e.target, d > 0)) return;
+  const ahora = performance.now(), hueco = ahora - rUlt, inercia = hueco < 70 && Math.abs(d) <= rAbs * 1.1 && ahora - rPaso < 550;
+  if (hueco > 220 || Math.sign(d) !== Math.sign(rAcum)) rAcum = 0;
+  rUlt = ahora; rAbs = Math.abs(d);
+  if (inercia || ahora - rPaso < 170) return;
+  rAcum += d;
+  if (Math.abs(rAcum) >= 40) { ir(pag + Math.sign(rAcum)); rAcum = 0; rPaso = ahora; }
+}, { passive: true });
+addEventListener('keydown', e => {
+  if (e.ctrlKey || e.altKey || e.metaKey) return;
+  const enControl = e.target.closest && e.target.closest('a,summary');
+  const d = { ArrowDown: 1, PageDown: 1, ArrowUp: -1, PageUp: -1 }[e.key] || (e.key === ' ' && !enControl ? (e.shiftKey ? -1 : 1) : 0);
+  if (d) { e.preventDefault(); ir(pag + d); } else if (e.key === 'Home') ir(0); else if (e.key === 'End') ir(secs.length - 1);
+});
 const fondo = [...FONDOS.criaturas];
 const nav = $$('#familias a'); let famAnt = null;
 // Devuelve el programa, o null mientras la GPU lo compila
@@ -277,7 +345,7 @@ const DURA = .7;
 // Giro: arrastrar la obra hacia los lados (o flechas izquierda y derecha)
 let agarre = null, velGiro = 0, finGiro = -9;
 const sobreObra = e => {
-  if (!esc.ok || e.target.closest('a,summary,details,#familias')) return false;
+  if (!esc.ok || e.target.closest('a,summary,#familias')) return false;
   const x = (e.clientX / W * 2 - 1) * W / H, y = 1 - e.clientY / H * 2;
   return Math.abs(x - esc.x) < esc.r * 1.3 && Math.abs(y - esc.y) < esc.r * 1.2;
 };
@@ -287,7 +355,7 @@ addEventListener('pointerdown', e => {
 });
 addEventListener('pointermove', e => {
   if (!agarre) { if (e.pointerType === 'mouse') document.body.classList.toggle('agarrable', sobreObra(e)); return; }
-  if (e.pointerId !== agarre.id || sujeto !== null) return;
+  if (e.pointerId !== agarre.id || sujeto !== null || gesto && gesto.modo === 'v') return;
   if (!agarre.gira) {
     const dx = Math.abs(e.clientX - agarre.x0), dy = Math.abs(e.clientY - agarre.y0);
     if (dx < 6 || dx < dy) return;
@@ -305,6 +373,7 @@ for (const ev of ['pointerup', 'pointercancel']) addEventListener(ev, e => {
   agarre = null; document.body.classList.remove('girando'); pide();
 });
 addEventListener('selectstart', e => { if (agarre) e.preventDefault(); });
+addEventListener('dragstart', e => e.preventDefault());
 addEventListener('keydown', e => {
   if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' || e.ctrlKey || e.altKey || e.metaKey) return;
   const c = C[estado().act.dataset.c], d = e.key === 'ArrowRight' ? 1 : -1;
@@ -324,13 +393,21 @@ addEventListener('click', e => {
   golpe = ahora; pide();
 });
 let de = null, hacia = null, avance = 0, sentido = 1, inv = 0, antes = 0;
+const NADA = { id: 'nada' };
+let pedida = null, desde = 0;
 function metamorfosis(meta, ms) {
   const dt = Math.min(.05, (ms - antes) / 1000); antes = ms;
-  if (!de) { if (toma(meta)) de = meta; return; }
+  if (meta !== pedida) { pedida = meta; desde = ms; }
+  const lista = toma(meta);
+  document.body.classList.toggle('cargando', !lista && ms - desde > 350);
+  if (!de) { if (lista) { de = NADA; hacia = meta; avance = 0; inv = 0; } return; }
   if (hacia && meta === de) { [de, hacia] = [hacia, de]; avance = 1 - avance; inv = 1 - inv; }
-  if (!hacia && meta !== de && toma(meta)) {
-    if (quieto) { de = meta; return; }
-    hacia = meta; avance = 0; inv = 0; sentido = orden.indexOf(meta) > orden.indexOf(de) ? 1 : -1;
+  if (!hacia && meta !== de) {
+    const sig = lista ? meta : de !== NADA && ms - desde > 120 ? NADA : null;
+    if (sig) {
+      if (quieto) { de = sig; return; }
+      hacia = sig; avance = 0; inv = 0; sentido = orden.indexOf(meta) > orden.indexOf(de) ? 1 : -1;
+    }
   }
   if (hacia) {
     // si ya hay otra esperando, acelera
@@ -339,28 +416,26 @@ function metamorfosis(meta, ms) {
   }
 }
 const orden = secs.filter(s => s.dataset.f).map(s => C[s.dataset.c]);
-// La URL muestra la familia en pantalla; los enlaces directos a una criatura siguen sirviendo para entrar
-// (no se toca hasta que la página carga y el navegador llega al ancla de entrada)
-let cargada = false;
-const ancla = location.hash && document.getElementById(location.hash.slice(1));
-const recarga = (performance.getEntriesByType('navigation')[0] || {}).type !== 'navigate';
-addEventListener('load', () => {
-  if (ancla && !recarga) ancla.scrollIntoView();
-  setTimeout(() => { cargada = true; famAnt = null; pide(); }, 300);
-});
-function ponUrl() {
-  if (!cargada) return;
-  const n = nav.find(n => (n.dataset.f || '') === famAnt);
-  if (!n || n.hash === location.hash || (!famAnt && !location.hash)) return;
-  history.replaceState(null, '', n.hash);
+const cabezas = grupos.map(g => orden.find(o => o.grupo === g.id));
+// Entrada: por enlace directo (#grupo o #obra) o, al recargar, donde se estaba
+{
+  let i = indiceDe(location.hash.slice(1));
+  if ((performance.getEntriesByType('navigation')[0] || {}).type === 'reload') try { const g = sessionStorage.getItem('pag'); if (g !== null) i = +g; } catch (e) {}
+  pag = limita(i, 0, secs.length - 1) || 0; ponTexto(secs[pag]);
+  try { sessionStorage.setItem('pag', pag); } catch (e) {}
 }
-addEventListener('hashchange', () => setTimeout(() => {
-  famAnt = estado().act.dataset.f || ''; ponUrl();
-  nav.forEach(n => (n.dataset.f || '') === famAnt ? n.setAttribute('aria-current', 'true') : n.removeAttribute('aria-current'));
-}, 50));
+// La URL muestra el grupo en pantalla
+function ponUrl() {
+  const n = nav.find(n => (n.dataset.f || '') === famAnt);
+  if (!n) return;
+  const caja = n.parentNode;
+  caja.scrollTo({ left: n.offsetLeft - (caja.clientWidth - n.offsetWidth) / 2, behavior: quieto ? 'auto' : 'smooth' });
+  if (n.hash !== location.hash && (famAnt || location.hash)) history.replaceState(null, '', n.hash);
+}
 // Centro y tamaño de la criatura, en unidades donde la pantalla mide 2 de alto
 const esc = { x: 0, y: 0, r: .5, ok: false };
 // envergadura de las más anchas, para que no pisen el texto
+const avisa = $('#espera');
 const ANCHO = { fenix: 1.36, hidra: 1.22, dragon: 1.45, tubos: 1.12, caracol: 1.35, ballena: 1.3, aspido: 1.3, arpa: 1.2, kraken: 1.32, saturno: 1.35, agujero: 1.3, montes: 1.35, ciudad: 1.35, templo: 1.35, castillo: 1.3, auto: 1.3, velero: 1.3, volcan: 1.25, faro: 1.25 };
 function escenario(sec, asp) {
   const an = C[sec.dataset.c].ancho || ANCHO[sec.dataset.c] || 1.12;
@@ -405,15 +480,18 @@ function cuadro(ms) {
   for (const p of ['x', 'y', 'r']) esc[p] += (lug[p] - esc[p]) * paso;
   esc.ok = true;
   const cx = esc.x, cy = esc.y, es = esc.r;
+  if (document.body.classList.contains('cargando')) { avisa.style.left = (cx / asp + 1) / 2 * W + 'px'; avisa.style.top = (1 - cy) / 2 * H + 'px'; }
   let mx = cx + Math.sin(t * .7) * es * .9, my = cy + es * (.75 + .18 * Math.cos(t * 1.1));
   my = Math.min(my, 1 - 130 / H);
   if (raton && (quieto || ms - ultimo < 4000)) { mx = (raton[0] / W * 2 - 1) * asp; my = 1 - raton[1] / H * 2; }
   const k = quieto ? 1 : sujeto !== null ? .45 : .08; lam.x += (mx - lam.x) * k; lam.y += (my - lam.y) * k;
   cv.orbe = { x: (lam.x / asp + 1) / 2 * W, y: (1 - lam.y) / 2 * H };
   radio += ((sujeto !== null ? .1 : asp < 1 ? .07 : .06) - radio) * .2;
-  if (par && C[act.dataset.c].prog && !orden.some(o => o.pend && !listo(o.pend))) { const sg = orden.find(o => !o.prog && !o.pend); if (sg) empieza(sg); }
+  if (par && C[act.dataset.c].prog && !orden.some(o => o.pend && !listo(o.pend))) {
+    const sg = [secs[idx + 1], secs[idx - 1]].map(s => s && C[s.dataset.c]).concat(cabezas, orden).find(o => o && !o.prog && !o.pend);
+    if (sg && (ms - desde > 900 || sg === (secs[idx + 1] && C[secs[idx + 1].dataset.c]))) empieza(sg);
+  }
   rotaPortada(act, ms); const c = C[act.dataset.c]; metamorfosis(c, ms);
-  for (const s of [secs[idx + 1], secs[idx - 1]]) if (s && !C[s.dataset.c].prog && !C[s.dataset.c].pend && c.prog) empieza(C[s.dataset.c]);
   (FONDOS[c.fondo] || FONDOS[c.grupo] || fondo).forEach((x, i) => fondo[i] += (x - fondo[i]) * (quieto ? 1 : .05));
   const tg = ms / 1000 - golpe, brinco = quieto || tg > 3 || tg < 0 ? 0 : Math.exp(-3 * tg) * Math.sin(tg * 11);
   if (!agarre && Math.abs(velGiro) > .0004) { c.giro = (c.giro || 0) + velGiro; velGiro *= .95; cambio = 0; }
@@ -431,7 +509,7 @@ function cuadro(ms) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, capas[2].fb); gl.useProgram(mez.pr); const z = mez.us;
   for (const i of [0, 1]) { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, capas[i].tex); }
   gl.uniform1i(z.A, 0); gl.uniform1i(z.B, 1); gl.uniform2f(z.res, cols, filas); gl.uniform2f(z.lampara, lam.x, lam.y); gl.uniform2f(z.centro, cx, cy);
-  gl.uniform1f(z.k, hacia ? Math.max(.0001, avance) : 0); gl.uniform1f(z.sentido, sentido); gl.uniform1f(z.inv, inv); gl.uniform1f(z.tiempo, t); gl.uniform1f(z.aspecto, asp); gl.uniform1f(z.esc, es); gl.uniform1f(z.hondo, hondo += (scrollY - hondo) * .1); gl.uniform1f(z.orbe, radio);
+  gl.uniform1f(z.k, hacia ? Math.max(.0001, avance) : 0); gl.uniform1f(z.sentido, sentido); gl.uniform1f(z.inv, inv); gl.uniform1f(z.tiempo, t); gl.uniform1f(z.aspecto, asp); gl.uniform1f(z.esc, es); gl.uniform1f(z.hondo, hondo += (pag * 600 - hondo) * .1); gl.uniform1f(z.orbe, radio);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, cv.width, cv.height); gl.useProgram(fin.pr); const f = fin.us;
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, letras); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, capas[2].tex);
@@ -441,25 +519,6 @@ function cuadro(ms) {
   if (!quieto || de !== c) pide();
 }
 function pide() { if (!pedido) { pedido = true; requestAnimationFrame(cuadro); } }
-addEventListener('scroll', pide, { passive: true });
-
-// Encaje: si el desplazamiento termina entre dos secciones, sigue solo en la misma dirección
-let yBase = scrollY, dedo = false, espera = 0, dirAnt = 1;
-function encaja() {
-  if (dedo) return;
-  const vh = document.documentElement.clientHeight, y = scrollY, dir = Math.sign(y - yBase) || dirAnt;
-  yBase = y; dirAnt = dir;
-  // frontera visible: la sección que empieza dentro de la pantalla
-  const sig = secs.find(x => { const t = x.getBoundingClientRect().top; return t > 2 && t < vh - 2; });
-  if (!sig) return;
-  const arriba = sig.getBoundingClientRect().top, entra = dir >= 0 ? vh - arriba : arriba;
-  const baja = dir >= 0 ? entra > vh * .05 : entra <= vh * .05;
-  scrollTo({ top: Math.round(y + (baja ? arriba : arriba - vh)), behavior: 'instant' });
-}
-const programa = ms => { clearTimeout(espera); espera = setTimeout(encaja, ms); };
-addEventListener('scroll', () => programa(110), { passive: true });
-addEventListener('touchstart', () => { dedo = true; clearTimeout(espera); }, { passive: true });
-for (const ev of ['touchend', 'touchcancel']) addEventListener(ev, e => { dedo = e.touches.length > 0; if (!dedo) programa(180); }, { passive: true });
 if (gl) {
   gl.bindVertexArray(gl.createVertexArray()); letras = gl.createTexture();
   capas = [0, 1, 2].map(() => ({ tex: gl.createTexture(), fb: gl.createFramebuffer() }));
