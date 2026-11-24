@@ -369,8 +369,8 @@ vec4 criatura(vec3 p, float t) {
 { id:'mimico', archivo:'mimico.glsl', codigo:
 `// No abras ese cofre.
 vec4 criatura(vec3 p, float t) {
+  p.yz *= gira(-.1); p.xz *= gira(giro);
   p.xz *= gira(.42 + .12 * sin(t * .6));
-  p.yz *= gira(.14);
   p.y += .22; p *= 1.12;
   float abre = .42 + .22 * (.5 + .5 * sin(t * 1.4));
   // base hueca
@@ -718,8 +718,8 @@ vec4 criatura(vec3 p, float t) {
 { id:'aspido', archivo:'aspidoquelonio.glsl', codigo:
 `// No eches el ancla aquí.
 vec4 criatura(vec3 p, float t) {
+  p.yz *= gira(-.24); p.xz *= gira(giro);
   p.xz *= gira(.5 + .25 * sin(t * .25));
-  p.yz *= gira(-.3);
   p.x += .2;
   p.y -= .06 * sin(t * .9) - .05;
   // caparazón con placas, cubierto de tierra

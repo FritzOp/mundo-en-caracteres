@@ -28,7 +28,7 @@ void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.-
 // Biblioteca disponible para el código de las criaturas
 const PRE = `#version 300 es
 precision highp float;
-uniform vec2 res;uniform vec2 centro;uniform vec2 lampara;uniform float tiempo,esc,aspecto,brinco;
+uniform vec2 res;uniform vec2 centro;uniform vec2 lampara;uniform float tiempo,esc,aspecto,brinco,giro;
 out vec4 sal;
 const vec3 AMBAR=vec3(1.,.62,.2),CIAN=vec3(.4,.95,.88),HUESO=vec3(.95,.9,.82),AZUL=vec3(.2,.38,.75),ROJO=vec3(.75,.2,.17);
 mat2 gira(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}
@@ -61,7 +61,7 @@ const POST = `
 vec4 viva(vec3 p){
  float b=.005*sin(tiempo*1.8)+.05*brinco,y=p.y+1.1;
  p.y=(y-.16*max(brinco,0.))/(1.+b)-1.1;p.xz*=1.+.55*b;p.x+=.01*sin(tiempo*1.1)*y-.025*clamp(lampara.x-centro.x,-1.,1.)*y;
- return criatura(p,tiempo);}
+ p.xz*=gira(giro);return criatura(p,tiempo);}
 float gr(vec3 p){return sin(p.x)*sin(p.y+1.3*sin(p.z*.7))*sin(p.z+.9*sin(p.x*.6));}
 void main(){
  vec2 s=(gl_FragCoord.xy/res*2.-1.)*vec2(aspecto,1.);
@@ -172,10 +172,11 @@ function termina({ pr, sh }) {
 }
 // Obra a partir de una imagen: la foto se ajusta al escenario y la linterna la ilumina
 const IMG = `#version 300 es
-precision highp float;uniform sampler2D foto;uniform vec2 res,centro,lampara;uniform float tiempo,esc,aspecto,brinco,prop;out vec4 sal;
+precision highp float;uniform sampler2D foto;uniform vec2 res,centro,lampara;uniform float tiempo,esc,aspecto,brinco,giro,prop;out vec4 sal;
 void main(){
  vec2 s=(gl_FragCoord.xy/res*2.-1.)*vec2(aspecto,1.),d=(s-centro)/(esc*.42);
  d.y-=.1*max(brinco,0.);d+=.012*vec2(sin(tiempo*.7+d.y*3.),cos(tiempo*.6+d.x*3.));
+ float cg=cos(giro);d.x/=cg<0.?min(cg,-.04):max(cg,.04);
  vec2 m=prop>1.?vec2(1.,1./prop):vec2(prop,1.),u=d/m*.5+.5;
  if(any(lessThan(u,vec2(0)))||any(greaterThan(u,vec2(1)))){sal=vec4(0);return;}
  vec4 c=texture(foto,vec2(u.x,1.-u.y));
@@ -190,9 +191,11 @@ function empieza(c) {
     im.onerror = () => console.error('No se pudo cargar', c.imagen);
     im.src = c.imagen;
   }
-  c.pend = inicia(c.imagen ? IMG : PRE + c.codigo + POST);
+  c.pend = inicia(c.imagen ? IMG : fuente(c.codigo));
 }
 const compila = frag => termina(inicia(frag));
+// si la obra aplica el giro por su cuenta, el motor no lo repite
+const fuente = cod => PRE + cod + (/gira\(giro\)/.test(cod) ? POST.replace('p.xz*=gira(giro);', '') : POST);
 const arma = codigo => compila(PRE + codigo + POST);
 
 let W, H, cols, filas, cw, ch, capas, letras, fin, mez, vacio, pedido = false;
@@ -271,11 +274,50 @@ function toma(c) {
 }
 // Metamorfosis: va por tiempo, así se ve igual al desplazarse que al saltar con un enlace
 const DURA = .7;
+// Giro: arrastrar la obra hacia los lados (o flechas izquierda y derecha)
+let agarre = null, velGiro = 0, finGiro = -9;
+const sobreObra = e => {
+  if (!esc.ok || e.target.closest('a,summary,details,#familias')) return false;
+  const x = (e.clientX / W * 2 - 1) * W / H, y = 1 - e.clientY / H * 2;
+  return Math.abs(x - esc.x) < esc.r * 1.3 && Math.abs(y - esc.y) < esc.r * 1.2;
+};
+addEventListener('pointerdown', e => {
+  if (e.button || !e.isPrimary || !sobreObra(e) || e.pointerType === 'touch' && enOrbe(e)) return;
+  agarre = { id: e.pointerId, x: e.clientX, x0: e.clientX, y0: e.clientY, t: performance.now(), gira: false }; velGiro = 0;
+});
+addEventListener('pointermove', e => {
+  if (!agarre) { if (e.pointerType === 'mouse') document.body.classList.toggle('agarrable', sobreObra(e)); return; }
+  if (e.pointerId !== agarre.id || sujeto !== null) return;
+  if (!agarre.gira) {
+    const dx = Math.abs(e.clientX - agarre.x0), dy = Math.abs(e.clientY - agarre.y0);
+    if (dx < 6 || dx < dy) return;
+    agarre.gira = true; agarre.x = e.clientX; document.body.classList.add('girando');
+  }
+  const c = C[estado().act.dataset.c], d = (e.clientX - agarre.x) / (esc.r * H / 2), ahora = performance.now();
+  c.giro = (c.giro || 0) + d;
+  velGiro = velGiro * .5 + d / Math.max(8, ahora - agarre.t) * 16 * .5;
+  velGiro = Math.max(-.11, Math.min(.11, velGiro));
+  agarre.x = e.clientX; agarre.t = ahora; cambio = 0; pide();
+});
+for (const ev of ['pointerup', 'pointercancel']) addEventListener(ev, e => {
+  if (!agarre || e.pointerId !== agarre.id) return;
+  if (agarre.gira) { finGiro = performance.now() / 1000; if (performance.now() - agarre.t > 90 || quieto) velGiro = 0; }
+  agarre = null; document.body.classList.remove('girando'); pide();
+});
+addEventListener('selectstart', e => { if (agarre) e.preventDefault(); });
+addEventListener('keydown', e => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' || e.ctrlKey || e.altKey || e.metaKey) return;
+  const c = C[estado().act.dataset.c], d = e.key === 'ArrowRight' ? 1 : -1;
+  if (quieto) c.giro = (c.giro || 0) + d * .2; else velGiro = Math.max(-.12, Math.min(.12, velGiro + d * .045));
+  cambio = 0; pide();
+});
+
 // Salto: solo si se presiona la criatura, y como mucho uno cada ESPERA segundos
 const ESPERA = 3;
 let golpe = -9;
 addEventListener('click', e => {
   const ahora = performance.now() / 1000;
+  if (ahora - finGiro < .25) return;
   if (ahora - golpe < ESPERA || e.target.closest('a,summary,details')) return;
   const x = (e.clientX / W * 2 - 1) * W / H, y = 1 - e.clientY / H * 2;
   if (Math.hypot(x - esc.x, y - esc.y) > esc.r * 1.15) return;
@@ -293,7 +335,7 @@ function metamorfosis(meta, ms) {
   if (hacia) {
     // si ya hay otra esperando, acelera
     avance += dt / DURA * (meta === hacia ? 1 : 2.2);
-    if (avance >= 1) { de = hacia; hacia = null; avance = 0; }
+    if (avance >= 1) { de.giro = 0; de = hacia; hacia = null; avance = 0; }
   }
 }
 const orden = secs.filter(s => s.dataset.f).map(s => C[s.dataset.c]);
@@ -347,7 +389,7 @@ function ponPortada(c) {
 ponPortada(saca());
 function rotaPortada(act, ms) {
   const c = C[act.dataset.c];
-  if (act.dataset.f || quieto) { cambio = 0; return; }
+  if (act.dataset.f || quieto || agarre) { cambio = 0; return; }
   if (!cambio || de !== c || hacia) { cambio = ms + 5000; return; }  // cuenta desde que ya se ve
   if (!proxima) proxima = saca();
   if (!proxima.prog && !proxima.pend) empieza(proxima);
@@ -374,12 +416,13 @@ function cuadro(ms) {
   for (const s of [secs[idx + 1], secs[idx - 1]]) if (s && !C[s.dataset.c].prog && !C[s.dataset.c].pend && c.prog) empieza(C[s.dataset.c]);
   (FONDOS[c.fondo] || FONDOS[c.grupo] || fondo).forEach((x, i) => fondo[i] += (x - fondo[i]) * (quieto ? 1 : .05));
   const tg = ms / 1000 - golpe, brinco = quieto || tg > 3 || tg < 0 ? 0 : Math.exp(-3 * tg) * Math.sin(tg * 11);
+  if (!agarre && Math.abs(velGiro) > .0004) { c.giro = (c.giro || 0) + velGiro; velGiro *= .95; cambio = 0; }
   const dibuja = (cri, capa) => {
     const prog = cri && cri.prog || vacio, u = prog.us;
     gl.bindFramebuffer(gl.FRAMEBUFFER, capas[capa].fb); gl.useProgram(prog.pr);
     gl.uniform2f(u.res, cols, filas); gl.uniform2f(u.centro, cx, cy); gl.uniform2f(u.lampara, lam.x, lam.y);
     if (cri && cri.imagen && prog === cri.prog) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, cri.tex); gl.uniform1i(u.foto, 0); gl.uniform1f(u.prop, cri.prop); }
-    gl.uniform1f(u.tiempo, t); gl.uniform1f(u.brinco, brinco); gl.uniform1f(u.esc, es * 2.8); gl.uniform1f(u.aspecto, asp);
+    gl.uniform1f(u.tiempo, t); gl.uniform1f(u.brinco, brinco); gl.uniform1f(u.giro, cri && cri.giro || 0); gl.uniform1f(u.esc, es * 2.8); gl.uniform1f(u.aspecto, asp);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   };
   gl.viewport(0, 0, cols, filas);

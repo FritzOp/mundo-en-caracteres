@@ -35,3 +35,5 @@ section{height:100vh;height:100svh}
 .activa>.caja{opacity:1;pointer-events:auto;transform:none;filter:none;transition:opacity .3s ease-out .13s,transform .3s ease-out .13s,filter .3s ease-out .13s}
 @media(max-aspect-ratio:1/1){.caja,.portada .caja,.indice .caja{width:calc(100% - 2*var(--margen))}}
 @media(prefers-reduced-motion:reduce){.caja,.activa>.caja{transform:none;filter:none;transition:none}}
+html{touch-action:pan-y pinch-zoom}#familias{touch-action:pan-x}
+.agarrable{cursor:grab}.girando,.girando *{cursor:grabbing!important;user-select:none;-webkit-user-select:none}

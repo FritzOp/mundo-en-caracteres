@@ -19,7 +19,7 @@ CRIATURAS.push(
 }` },
 { id:'agujero', codigo:
 `vec4 criatura(vec3 p, float t) {
-  vec3 v = p;
+  vec3 v = p; v.xz *= gira(-giro);
   p.xy *= gira(.22); p.yz *= gira(-.16);
   vec4 c = vec4(vec3(0), esfera(p, .44));
   // disco de gas
@@ -187,7 +187,7 @@ CRIATURAS.push(
 }` },
 { id:'montes', codigo:
 `vec4 criatura(vec3 p, float t) {
-  p.yz *= gira(-.28); p.xz *= gira(.3 * sin(t * .2)); p.y += .35;
+  p.yz *= gira(-.28); p.xz *= gira(giro); p.xz *= gira(.3 * sin(t * .2)); p.y += .35;
   // terreno en un bloque
   vec2 u = p.xz;
   float n = .5 * sin(u.x * 2.6 + 1.) * cos(u.y * 2.1) + .26 * sin(u.x * 5.3 + u.y * 3.1) + .13 * abs(sin(u.x * 9. - u.y * 7.)) + .06 * sin(u.x * 21. + u.y * 17.);
@@ -249,7 +249,7 @@ CRIATURAS.push(
 }` },
 { id:'castillo', codigo:
 `vec4 criatura(vec3 p, float t) {
-  p.yz *= gira(-.2); p.xz *= gira(.6 + .3 * sin(t * .25)); p.y += .2;
+  p.yz *= gira(-.2); p.xz *= gira(giro); p.xz *= gira(.6 + .3 * sin(t * .25)); p.y += .2;
   vec4 c = vec4(vec3(.2, .26, .14), (elipse(p + vec3(0, 1.05, 0), vec3(1.3, .4, 1.3)) + .03 * sin(p.x * 9.) * sin(p.z * 8.)) * .7);
   vec3 q = vec3(abs(p.x), p.y, abs(p.z));
   float lad = step(.5, fract(p.y * 8.)) * .5;
@@ -284,7 +284,7 @@ CRIATURAS.push(
 }` },
 { id:'ciudad', codigo:
 `vec4 criatura(vec3 p, float t) {
-  p.yz *= gira(-.42); p.xz *= gira(.6 + t * .08); p.y += .5;
+  p.yz *= gira(-.42); p.xz *= gira(giro); p.xz *= gira(.6 + t * .08); p.y += .5;
   vec4 c = vec4(vec3(.12, .13, .16), caja(p + vec3(0, .3, 0), vec3(1.25, .06, 1.25)));
   float calle = max(step(.43, abs(fract(p.x / .4 + .5) - .5)), step(.43, abs(fract(p.z / .4 + .5) - .5)));
   float coche = step(.8, fract(p.x * 4. + p.z * 4. + t * .8)) * calle;
@@ -310,7 +310,7 @@ CRIATURAS.push(
 }` },
 { id:'templo', codigo:
 `vec4 criatura(vec3 p, float t) {
-  p.yz *= gira(-.16); p.xz *= gira(.65 + .3 * sin(t * .2)); p.y += .1;
+  p.yz *= gira(-.16); p.xz *= gira(giro); p.xz *= gira(.65 + .3 * sin(t * .2)); p.y += .1;
   vec3 marmol = vec3(.72, .68, .6) * (.88 + .14 * sin(p.x * 9. + 3. * sin(p.y * 7. + p.z * 5.)));
   // escalinata
   float d = caja(p + vec3(0, .86, 0), vec3(1.3, .06, .86));
@@ -405,7 +405,7 @@ CRIATURAS.push(
 }` },
 { id:'taza', codigo:
 `vec4 criatura(vec3 p, float t) {
-  p.yz *= gira(-.38); p.xz *= gira(.4 * sin(t * .3) - .4); p.y += .3;
+  p.yz *= gira(-.38); p.xz *= gira(giro); p.xz *= gira(.4 * sin(t * .3) - .4); p.y += .3;
   float r = length(p.xz);
   // plato
   float pl = max(abs(p.y + .52 - .16 * smoothstep(.4, 1., r)) - .025, r - 1.);
@@ -436,7 +436,7 @@ CRIATURAS.push(
 }` },
 { id:'auto', codigo:
 `vec4 criatura(vec3 p, float t) {
-  p.yz *= gira(-.2); p.xz *= gira(.65 + .35 * sin(t * .3)); p.y += .05 + .008 * sin(t * 22.);
+  p.yz *= gira(-.2); p.xz *= gira(giro); p.xz *= gira(.65 + .35 * sin(t * .3)); p.y += .05 + .008 * sin(t * 22.);
   vec3 q = vec3(p.xy, abs(p.z));
   // carrocería
   float d = caja(p - vec3(0, -.22, 0), vec3(1.05, .13, .4)) - .1;
