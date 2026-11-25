@@ -1,6 +1,8 @@
 // Animaciones de la interfaz, adaptadas a este sitio a partir de React Bits (reactbits.dev), de David Haz:
 // DecryptedText, BlurText, CountUp, AnimatedList, ClickSpark, Magnet, StarBorder, SpotlightCard y LetterGlitch.
 // Licencia MIT + Commons Clause: el texto está en LICENCIA-REACT-BITS.txt.
+// los enlaces antiguos con .html siguen valiendo, pero la barra muestra la dirección limpia
+if (/^https?:$/.test(location.protocol) && /\/(index|generador)\.html$/.test(location.pathname)) try { history.replaceState(history.state, '', location.pathname.replace(/(index)?\.html$/, '') + location.search + location.hash); } catch (e) {}
 // la tipografía se pide aparte para que, si tarda, no retrase la página
 { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wdth,wght@75..100,300..800&family=Martian+Mono:wght@300..600&display=swap'; document.head.append(l); }
 window.Anim = (() => {
@@ -94,7 +96,7 @@ window.Anim = (() => {
 
   // el esqueleto de carga se retira cuando ya hay dibujo
   let puesto = true;
-  function lista() { if (!puesto) return; puesto = false; document.documentElement.classList.add('lista'); const e = document.getElementById('esq'); if (e) { if (+getComputedStyle(e.firstElementChild).opacity < .05) e.remove(); else setTimeout(() => e.remove(), 220); } setTimeout(() => { const l = document.createElement("link"); l.rel = "prefetch"; l.href = document.getElementById("mar") ? "generador.html" : "index.html"; document.head.append(l); }, 2500); }
+  function lista() { if (!puesto) return; puesto = false; document.documentElement.classList.add('lista'); const e = document.getElementById('esq'); if (e) { if (+getComputedStyle(e.firstElementChild).opacity < .05) e.remove(); else setTimeout(() => e.remove(), 220); } setTimeout(() => { const l = document.createElement("link"); l.rel = "prefetch"; l.href = document.getElementById("mar") ? "generador" : "./"; document.head.append(l); }, 2500); }
 
   // entrada de cada página de la galería
   let actual = [];

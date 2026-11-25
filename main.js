@@ -12,7 +12,7 @@ const obras = OBRAS.filter(o => {
 const slug = { reales: 'animales-reales', fauna: 'fauna-fantastica', monstruos: 'monstruos', mitos: 'mitologia' }, vistos = new Set();
 const ancla1 = id => { if (!id || vistos.has(id)) return ''; vistos.add(id); return `<span id="${id}"></span>`; };
 const grupos = GRUPOS.filter(g => obras.some(o => o.grupo === g.id));
-$('#familias').innerHTML = '<a href="#inicio">Inicio</a>' + grupos.map(g => `<a href="#${g.id}" data-f="${g.id}">${g.nombre}</a>`).join('') + '<a href="generador.html" data-f="-">Generador</a>';
+$('#familias').innerHTML = '<a href="#inicio">Inicio</a>' + grupos.map(g => `<a href="#${g.id}" data-f="${g.id}">${g.nombre}</a>`).join('') + '<a href="generador" data-f="-">Generador</a>';
 $('#indice .caja').innerHTML = grupos.map(g => {
   const l = obras.filter(o => o.grupo === g.id);
   return `<details name="indice"><summary>${g.nombre}<span>${l.length}</span></summary><ul>${l.map(o => `<li><a href="#${o.id}">${o.titulo}</a></li>`).join('')}</ul></details>`;
